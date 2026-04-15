@@ -14,11 +14,20 @@ npm run preview   # Preview production build
 
 ## Architecture
 
-This is a single-component React app (Vite + React 19). All application logic lives in `src/App.jsx` — there are no sub-components, routing, or backend. State is managed entirely with `useState`; there is no persistence (data resets on refresh).
+React 19 app built with Vite. No routing, no backend — all state is in-memory and resets on refresh.
 
-### Known intentional issues (course exercises)
+### Component tree
 
-- **Bug**: `amount` is stored as a string, so `reduce` concatenates instead of summing — totals are wrong.
-- **Transaction #4**: "Freelance Work" is typed `"expense"` but categorized as `"salary"` — incorrect seed data.
-- **UI**: Minimal styling in `src/App.css`; no delete functionality, no edit, no charts.
-- **Code smell**: All logic (filtering, form handling, summary calculation) is inline in one large component.
+```
+App                         # holds transactions state, passes it down
+├── Summary                 # receives transactions, computes totals/balance internally
+├── TransactionForm         # owns its own form state; calls onAdd(transaction) prop
+└── TransactionList         # receives transactions; owns filter state internally
+```
+
+- **`App.jsx`** — only owns `transactions` state and a `handleAdd` callback.
+- **`Summary.jsx`** — derives `totalIncome`, `totalExpenses`, and `balance` from the `transactions` prop.
+- **`TransactionForm.jsx`** — self-contained form; notifies parent via `onAdd` prop.
+- **`TransactionList.jsx`** — handles filtering (`filterType`, `filterCategory`) locally; renders the transactions table.
+
+There is no shared state management library — all state flows via props.
