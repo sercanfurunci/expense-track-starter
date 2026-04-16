@@ -24,14 +24,28 @@ function App() {
     setTransactions(transactions.filter(t => t.id !== id));
   };
 
-  return (
-    <div className="app">
-      <h1>Finance Tracker</h1>
-      <p className="subtitle">Track your income and expenses</p>
+  const handleEdit = (id, updated) => {
+    setTransactions(transactions.map(t => t.id === id ? { ...t, ...updated } : t));
+  };
 
-      <Summary transactions={transactions} />
-      <TransactionForm onAdd={handleAdd} />
-      <TransactionList transactions={transactions} onDelete={handleDelete} />
+  return (
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        {/* Header */}
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl bg-violet-500 flex items-center justify-center text-white text-lg font-bold shadow-lg">
+              $
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Finance Tracker</h1>
+          </div>
+          <p className="text-slate-400 ml-12 text-sm">Keep tabs on your income and expenses</p>
+        </div>
+
+        <Summary transactions={transactions} />
+        <TransactionForm onAdd={handleAdd} />
+        <TransactionList transactions={transactions} onDelete={handleDelete} onEdit={handleEdit} />
+      </div>
     </div>
   );
 }

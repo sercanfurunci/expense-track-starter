@@ -27,32 +27,45 @@ function TransactionForm({ onAdd }) {
     setCategory("food");
   };
 
+  const inputClass = "bg-slate-700/50 border border-slate-600/50 text-white placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition";
+  const selectClass = "bg-slate-700/50 border border-slate-600/50 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition cursor-pointer";
+
   return (
-    <div className="add-transaction">
-      <h2>Add Transaction</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="bg-slate-800/60 backdrop-blur border border-slate-700/50 rounded-2xl p-6 mb-6 shadow-xl">
+      <h2 className="text-base font-semibold text-white mb-5 flex items-center gap-2">
+        <span className="w-6 h-6 rounded-md bg-violet-500/20 flex items-center justify-center text-violet-400 text-xs">+</span>
+        Add Transaction
+      </h2>
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3">
         <input
           type="text"
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className={`${inputClass} flex-[2] min-w-[140px]`}
         />
         <input
           type="number"
           placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          className={`${inputClass} flex-1 min-w-[100px]`}
         />
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+        <select value={type} onChange={(e) => setType(e.target.value)} className={`${selectClass} flex-1 min-w-[110px]`}>
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </select>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${selectClass} flex-1 min-w-[120px]`}>
           {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
+            <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
           ))}
         </select>
-        <button type="submit">Add</button>
+        <button
+          type="submit"
+          className="bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-sm rounded-xl px-6 py-2.5 transition shadow-lg shadow-violet-900/30 cursor-pointer"
+        >
+          Add
+        </button>
       </form>
     </div>
   );
