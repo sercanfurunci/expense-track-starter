@@ -46,8 +46,19 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  FRONTEND_URL,
+];
+
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.json());
