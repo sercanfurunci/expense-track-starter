@@ -35,7 +35,7 @@ function App() {
 
   useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:3000/transactions", {
+    fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -61,7 +61,7 @@ function App() {
 
   const handleAdd = async (transaction) => {
     try {
-      const res = await fetch("http://localhost:3000/transactions", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -78,7 +78,7 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:3000/transactions/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/transactions/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -90,7 +90,7 @@ function App() {
 
   const handleEdit = async (id, updated) => {
     try {
-      const res = await fetch(`http://localhost:3000/transactions/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

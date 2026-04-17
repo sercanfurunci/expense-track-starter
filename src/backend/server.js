@@ -44,8 +44,10 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
   process.exit(1);
 }
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: FRONTEND_URL,
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.json());
@@ -161,7 +163,7 @@ app.post("/auth/register", async (req, res) => {
       [email, password_hash, verifyToken, verifyExpires]
     );
 
-    const verifyUrl = `http://localhost:3000/auth/verify?token=${verifyToken}`;
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:3000"}/auth/verify?token=${verifyToken}`;
 
     await transporter.sendMail({
       from: `"Finance Tracker" <${process.env.MAIL_USER}>`,
@@ -244,7 +246,7 @@ function verifyHtmlPage(message, success) {
         <div style="width:56px;height:56px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:${color};">${icon}</div>
         <div style="font-size:24px;font-weight:bold;color:#fff;margin-bottom:8px;">Finance Tracker</div>
         <p style="color:#94a3b8;margin:0 0 24px;">${message}</p>
-        <a href="http://localhost:5173" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:10px 28px;border-radius:10px;font-weight:600;">Go to App</a>
+        <a href="${FRONTEND_URL}" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:10px 28px;border-radius:10px;font-weight:600;">Go to App</a>
       </div>
     </body>
     </html>
@@ -408,7 +410,7 @@ app.post("/auth/forgot-password", async (req, res) => {
       [resetToken, resetExpires, userId]
     );
 
-    const resetUrl = `http://localhost:5173/?reset_token=${resetToken}`;
+    const resetUrl = `${FRONTEND_URL}/?reset_token=${resetToken}`;
 
     await transporter.sendMail({
       from: `"Finance Tracker" <${process.env.MAIL_USER}>`,
