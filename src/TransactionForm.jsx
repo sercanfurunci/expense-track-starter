@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLang } from "./i18n.jsx";
 
 const categories = [
   "food",
@@ -11,6 +12,7 @@ const categories = [
 ];
 
 function TransactionForm({ onAdd }) {
+  const { t } = useLang();
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("expense");
@@ -35,58 +37,79 @@ function TransactionForm({ onAdd }) {
   };
 
   const inputClass =
-    "bg-white border border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition";
+    "block w-full appearance-none bg-white border border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition";
+
   const selectClass =
-    "bg-white border border-slate-300 text-slate-800 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition cursor-pointer";
+    "block w-full appearance-none bg-white border border-slate-300 text-slate-800 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition cursor-pointer";
 
   return (
-    <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 backdrop-blur rounded-2xl p-6 mb-6 shadow-sm dark:shadow-xl">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
-        <span className="w-6 h-6 rounded-md bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs">
+    <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm dark:shadow-xl">
+      <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <span className="w-6 h-6 rounded-md bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs shrink-0">
           +
         </span>
-        Add Transaction
+        {t("addTransaction")}
       </h2>
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className={`${inputClass} flex-[2] min-w-[140px]`}
-        />
-        <input
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className={`${inputClass} flex-1 min-w-[100px]`}
-        />
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className={`${selectClass} flex-1 min-w-[110px]`}
-        >
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-        </select>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className={`${selectClass} flex-1 min-w-[120px]`}
-        >
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat.charAt(0).toUpperCase() + cat.slice(1)}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-sm rounded-xl px-6 py-2.5 transition shadow-lg shadow-violet-900/30 cursor-pointer"
-        >
-          Add
-        </button>
+
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+        {/* Description — full width on all sizes */}
+        <div className="col-span-2 sm:flex-[2] sm:min-w-36">
+          <input
+            type="text"
+            placeholder={t("descriptionPlaceholder")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        {/* Amount */}
+        <div className="col-span-1 sm:flex-1 sm:min-w-24">
+          <input
+            type="number"
+            placeholder={t("amountPlaceholder")}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        {/* Type */}
+        <div className="col-span-1 sm:flex-1 sm:min-w-28">
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className={selectClass}
+          >
+            <option value="income">{t("incomeOption")}</option>
+            <option value="expense">{t("expenseOption")}</option>
+          </select>
+        </div>
+
+        {/* Category */}
+        <div className="col-span-1 sm:flex-1 sm:min-w-28">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={selectClass}
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {t(cat)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Submit */}
+        <div className="col-span-1 sm:flex-none">
+          <button
+            type="submit"
+            className="block w-full sm:w-auto bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-sm rounded-xl px-6 py-3 transition shadow-lg shadow-violet-900/30 cursor-pointer"
+          >
+            {t("addBtn")}
+          </button>
+        </div>
       </form>
     </div>
   );
