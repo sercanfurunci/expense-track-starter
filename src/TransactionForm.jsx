@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { useLang } from "./i18n.jsx";
 
-const categories = [
-  "food",
-  "housing",
-  "utilities",
-  "transport",
-  "entertainment",
-  "salary",
-  "other",
-];
+const categories = ["food", "housing", "utilities", "transport", "entertainment", "salary", "other"];
 
 function TransactionForm({ onAdd }) {
   const { t } = useLang();
@@ -21,7 +13,6 @@ function TransactionForm({ onAdd }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!description || !amount) return;
-
     onAdd({
       description,
       amount,
@@ -29,84 +20,71 @@ function TransactionForm({ onAdd }) {
       category,
       date: new Date().toISOString().split("T")[0],
     });
-
     setDescription("");
     setAmount("");
     setType("expense");
     setCategory("food");
   };
 
-  const inputClass =
-    "block w-full appearance-none bg-white border border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition";
-
-  const selectClass =
-    "block w-full appearance-none bg-white border border-slate-300 text-slate-800 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition cursor-pointer";
-
   return (
-    <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm dark:shadow-xl">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-        <span className="w-6 h-6 rounded-md bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs shrink-0">
-          +
-        </span>
-        {t("addTransaction")}
-      </h2>
+    <div className="fin-card rounded-2xl p-4 sm:p-6 mb-4 sm:mb-5 anim-2">
+      <h2 className="fin-label mb-4">{t("addTransaction")}</h2>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-        {/* Description — full width on all sizes */}
-        <div className="col-span-2 sm:flex-[2] sm:min-w-36">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        {/* Row 1: Description + Amount */}
+        <div className="flex gap-2.5">
           <input
             type="text"
             placeholder={t("descriptionPlaceholder")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className={inputClass}
+            className="fin-input flex-[2] min-w-0"
           />
-        </div>
-
-        {/* Amount */}
-        <div className="col-span-1 sm:flex-1 sm:min-w-24">
           <input
             type="number"
             placeholder={t("amountPlaceholder")}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className={inputClass}
+            className="fin-input fin-mono flex-1 min-w-0 text-right"
+            style={{ minWidth: "90px" }}
           />
         </div>
 
-        {/* Type */}
-        <div className="col-span-1 sm:flex-1 sm:min-w-28">
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className={selectClass}
-          >
-            <option value="income">{t("incomeOption")}</option>
-            <option value="expense">{t("expenseOption")}</option>
-          </select>
-        </div>
+        {/* Row 2: Type toggle + Category + Add */}
+        <div className="flex gap-2.5 flex-wrap sm:flex-nowrap">
+          {/* Income / Expense toggle */}
+          <div className="type-toggle shrink-0">
+            <button
+              type="button"
+              onClick={() => setType("income")}
+              className={`type-btn ${type === "income" ? "active-income" : ""}`}
+            >
+              + {t("incomeOption")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setType("expense")}
+              className={`type-btn ${type === "expense" ? "active-expense" : ""}`}
+            >
+              − {t("expenseOption")}
+            </button>
+          </div>
 
-        {/* Category */}
-        <div className="col-span-1 sm:flex-1 sm:min-w-28">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className={selectClass}
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {t(cat)}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Category */}
+          <div className="flex-1 min-w-[110px] relative">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="fin-select w-full"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{t(cat)}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Submit */}
-        <div className="col-span-1 sm:flex-none">
-          <button
-            type="submit"
-            className="block w-full sm:w-auto bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white font-semibold text-sm rounded-xl px-6 py-3 transition shadow-lg shadow-violet-900/30 cursor-pointer"
-          >
+          {/* Submit */}
+          <button type="submit" className="fin-btn-primary shrink-0">
             {t("addBtn")}
           </button>
         </div>

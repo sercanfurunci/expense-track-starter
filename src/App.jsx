@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import Summary from "./Summary";
+import Dashboard from "./Dashboard";
+import Analytics from "./Analytics";
 import TransactionForm from "./TransactionForm";
 import TransactionList from "./TransactionList";
 import LoginPage from "./LoginPage";
@@ -8,6 +9,43 @@ import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import ResetPasswordPage from "./ResetPasswordPage";
 import { useLang } from "./i18n.jsx";
+
+// ── Nav icons ──────────────────────────────────────────────
+function IconDashboard({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={active ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+function IconTransactions({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={active ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
+}
+function IconAnalytics({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={active ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6"  y1="20" x2="6"  y2="14" />
+    </svg>
+  );
+}
+
+const TABS = [
+  { id: "dashboard",    label: "Overview",     Icon: IconDashboard },
+  { id: "transactions", label: "Transactions", Icon: IconTransactions },
+  { id: "analytics",   label: "Analytics",    Icon: IconAnalytics },
+];
 
 function App() {
   const { t, lang, toggleLang } = useLang();
@@ -20,9 +58,10 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     return params.get("reset_token") || null;
   });
-  const [page, setPage] = useState(() =>
+  const [authPage, setAuthPage] = useState(() =>
     new URLSearchParams(window.location.search).get("reset_token") ? "reset-password" : "login"
   );
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved !== null ? saved === "dark" : true;
@@ -56,17 +95,14 @@ function App() {
     setToken(null);
     setCurrentUser(null);
     setTransactions([]);
-    setPage("login");
+    setAuthPage("login");
   };
 
   const handleAdd = async (transaction) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(transaction),
       });
       const data = await res.json();
@@ -82,7 +118,7 @@ function App() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
     } catch (err) {
       console.log("DELETE error:", err);
     }
@@ -92,114 +128,171 @@ function App() {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(updated),
       });
       const data = await res.json();
-      setTransactions((prev) => prev.map((t) => (t.id === id ? data : t)));
+      setTransactions((prev) => prev.map((tx) => (tx.id === id ? data : tx)));
     } catch (err) {
       console.log("PUT error:", err);
     }
   };
 
+  // ── Auth screens ──
   if (!token) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
-        {page === "reset-password" ? (
-          <ResetPasswordPage
-            resetToken={resetToken}
-            onBack={() => setPage("login")}
-          />
-        ) : page === "forgot-password" ? (
-          <ForgotPasswordPage
-            onBack={() => setPage("login")}
-          />
-        ) : page === "login" ? (
+      <div className="min-h-screen login-bg transition-colors duration-300">
+        {authPage === "reset-password" ? (
+          <ResetPasswordPage resetToken={resetToken} onBack={() => setAuthPage("login")} />
+        ) : authPage === "forgot-password" ? (
+          <ForgotPasswordPage onBack={() => setAuthPage("login")} />
+        ) : authPage === "login" ? (
           <LoginPage
             onSuccess={handleAuthSuccess}
-            onSwitch={() => setPage("register")}
-            onForgotPassword={() => setPage("forgot-password")}
+            onSwitch={() => setAuthPage("register")}
+            onForgotPassword={() => setAuthPage("forgot-password")}
           />
         ) : (
-          <RegisterPage
-            onSwitch={() => setPage("login")}
-          />
+          <RegisterPage onSwitch={() => setAuthPage("login")} />
         )}
       </div>
     );
   }
 
+  // ── Main app ──
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-100 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
-        {/* Header */}
-        <div className="mb-6 sm:mb-10">
-          <div className="flex items-center justify-between mb-1 gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-500 flex items-center justify-center text-white text-base sm:text-lg font-bold shadow-lg shrink-0">
-                $
+    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: "var(--bg)" }}>
+      <div className="max-w-3xl mx-auto px-4 pt-6 sm:pt-10 pb-24 sm:pb-10">
+
+        {/* ── Header ── */}
+        <header className="mb-6 anim-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0"
+                style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                <h1 className="fin-serif text-xl sm:text-2xl leading-tight truncate" style={{ color: "var(--text-1)" }}>
                   {t("appName")}
                 </h1>
                 {currentUser?.email && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-3)" }}>
                     {currentUser.email}
                   </p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <button
-                onClick={toggleLang}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700/60 dark:hover:bg-slate-700 flex items-center justify-center transition cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-300"
-                title="Switch language"
-              >
-                {lang === "en" ? "TR" : "EN"}
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={toggleLang} className="fin-icon-btn" title="Switch language">
+                <span className="text-xs font-semibold">{lang === "en" ? "TR" : "EN"}</span>
               </button>
-              <button
-                onClick={() => setIsDark((d) => !d)}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700/60 dark:hover:bg-slate-700 flex items-center justify-center transition cursor-pointer"
-                title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              >
+              <button onClick={() => setIsDark((d) => !d)} className="fin-icon-btn" title="Toggle theme">
                 {isDark ? (
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M18.364 18.364l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                   </svg>
                 )}
               </button>
-              <button
-                onClick={handleLogout}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700/60 dark:hover:bg-slate-700 flex items-center justify-center transition cursor-pointer"
-                title={t("signOut")}
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <button onClick={handleLogout} className="fin-icon-btn" title={t("signOut")}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
               </button>
             </div>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            {t("appSubtitle")}
-          </p>
+        </header>
+
+        {/* ── Desktop tab bar ── */}
+        <div className="hidden sm:flex gap-1 mb-6 p-1 rounded-xl anim-2" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}>
+          {TABS.map(({ id, label, Icon: TabIcon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                style={{
+                  backgroundColor: isActive ? "var(--bg)" : "transparent",
+                  color: isActive ? "var(--brand)" : "var(--text-3)",
+                  border: isActive ? "1px solid var(--border)" : "1px solid transparent",
+                  boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                <TabIcon active={isActive} />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        <Summary transactions={transactions} />
-        <TransactionForm onAdd={handleAdd} />
-        <TransactionList
-          transactions={transactions}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-        />
+        {/* ── Page content ── */}
+        {activeTab === "dashboard" && (
+          <Dashboard transactions={transactions} />
+        )}
+
+        {activeTab === "transactions" && (
+          <div className="anim-1">
+            <TransactionForm onAdd={handleAdd} />
+            <TransactionList
+              transactions={transactions}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
+          </div>
+        )}
+
+        {activeTab === "analytics" && (
+          <Analytics transactions={transactions} />
+        )}
       </div>
+
+      {/* ── Mobile bottom nav ── */}
+      <nav
+        className="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center px-6 py-2"
+        style={{
+          backgroundColor: "var(--surface)",
+          borderTop: "1px solid var(--border)",
+          paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+        }}
+      >
+        {TABS.map(({ id, label, Icon: NavIcon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 flex flex-col items-center gap-1 py-1 cursor-pointer transition-all"
+              style={{ color: isActive ? "var(--brand)" : "var(--text-3)" }}
+            >
+              <NavIcon active={isActive} />
+              <span className="text-[10px] font-medium">{label}</span>
+              {isActive && (
+                <div
+                  className="absolute bottom-0 w-6 h-0.5 rounded-full"
+                  style={{ backgroundColor: "var(--brand)" }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

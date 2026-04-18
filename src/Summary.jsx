@@ -1,55 +1,69 @@
+import { useLang } from "./i18n.jsx";
+
+const fmt = (n) =>
+  n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function Summary({ transactions }) {
+  const { t } = useLang();
+
   const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
   const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
   const balance = totalIncome - totalExpenses;
+  const isPositive = balance >= 0;
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
-      {/* Income */}
-      <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 rounded-2xl p-3 sm:p-5 shadow-sm dark:shadow-xl">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-          <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate">Income</p>
-        </div>
-        <p className="text-base sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 truncate">${totalIncome.toLocaleString()}</p>
-      </div>
-
-      {/* Expenses */}
-      <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 rounded-2xl p-3 sm:p-5 shadow-sm dark:shadow-xl">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-rose-500/20 flex items-center justify-center shrink-0">
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-            </svg>
-          </div>
-          <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate">Expenses</p>
-        </div>
-        <p className="text-base sm:text-2xl font-bold text-rose-600 dark:text-rose-400 truncate">${totalExpenses.toLocaleString()}</p>
-      </div>
-
-      {/* Balance */}
-      <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 rounded-2xl p-3 sm:p-5 shadow-sm dark:shadow-xl">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-violet-500/20 flex items-center justify-center shrink-0">
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-            </svg>
-          </div>
-          <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest truncate">Balance</p>
-        </div>
-        <p className={`text-base sm:text-2xl font-bold truncate ${balance >= 0 ? "text-violet-600 dark:text-violet-400" : "text-rose-600 dark:text-rose-400"}`}>
-          ${balance.toLocaleString()}
+    <div className="mb-5 sm:mb-7 anim-1">
+      {/* Balance — hero card */}
+      <div
+        className="fin-card relative overflow-hidden rounded-2xl p-6 sm:p-8 mb-3"
+      >
+        <p className="fin-label">{t("balance")}</p>
+        <p
+          className="fin-serif fin-mono mt-2 text-4xl sm:text-5xl font-bold tracking-tight"
+          style={{ color: isPositive ? "var(--gold)" : "var(--red)", letterSpacing: "-0.02em" }}
+        >
+          {!isPositive && "−"}${fmt(Math.abs(balance))}
         </p>
+        <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
+          {transactions.length} {transactions.length === 1 ? "transaction" : "transactions"} recorded
+        </p>
+
+        {/* Bottom accent bar */}
+        <div
+          className="fin-bar"
+          style={{ background: isPositive ? "var(--gold)" : "var(--red)" }}
+        />
+      </div>
+
+      {/* Income + Expenses */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="fin-card relative overflow-hidden rounded-2xl p-4 sm:p-5">
+          <p className="fin-label">{t("income")}</p>
+          <p
+            className="fin-mono text-xl sm:text-2xl font-bold mt-2 tracking-tight"
+            style={{ color: "var(--green)", letterSpacing: "-0.02em" }}
+          >
+            +${fmt(totalIncome)}
+          </p>
+          <div className="fin-bar" style={{ background: "var(--green)" }} />
+        </div>
+
+        <div className="fin-card relative overflow-hidden rounded-2xl p-4 sm:p-5">
+          <p className="fin-label">{t("expenses")}</p>
+          <p
+            className="fin-mono text-xl sm:text-2xl font-bold mt-2 tracking-tight"
+            style={{ color: "var(--red)", letterSpacing: "-0.02em" }}
+          >
+            −${fmt(totalExpenses)}
+          </p>
+          <div className="fin-bar" style={{ background: "var(--red)" }} />
+        </div>
       </div>
     </div>
   );
