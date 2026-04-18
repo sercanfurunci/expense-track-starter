@@ -9,6 +9,7 @@ import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import ResetPasswordPage from "./ResetPasswordPage";
 import ProfileModal from "./ProfileModal";
+import LandingPage from "./LandingPage";
 import { CurrencyProvider } from "./currency.jsx";
 import { useLang } from "./i18n.jsx";
 
@@ -61,7 +62,7 @@ function App() {
     return params.get("reset_token") || null;
   });
   const [authPage, setAuthPage] = useState(() =>
-    new URLSearchParams(window.location.search).get("reset_token") ? "reset-password" : "login"
+    new URLSearchParams(window.location.search).get("reset_token") ? "reset-password" : "landing"
   );
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showProfile, setShowProfile] = useState(false);
@@ -105,7 +106,7 @@ function App() {
     setToken(null);
     setCurrentUser(null);
     setTransactions([]);
-    setAuthPage("login");
+    setAuthPage("landing");
   };
 
   const handleAdd = async (transaction) => {
@@ -150,10 +151,18 @@ function App() {
 
   // ── Auth screens ──
   if (!token) {
+    if (authPage === "landing") {
+      return (
+        <LandingPage
+          onGetStarted={() => setAuthPage("register")}
+          onSignIn={() => setAuthPage("login")}
+        />
+      );
+    }
     return (
       <div className="min-h-screen login-bg transition-colors duration-300">
         {authPage === "reset-password" ? (
-          <ResetPasswordPage resetToken={resetToken} onBack={() => setAuthPage("login")} />
+          <ResetPasswordPage resetToken={resetToken} onBack={() => setAuthPage("landing")} />
         ) : authPage === "forgot-password" ? (
           <ForgotPasswordPage onBack={() => setAuthPage("login")} />
         ) : authPage === "login" ? (
