@@ -78,6 +78,21 @@ function App() {
 
   useEffect(() => {
     if (!token) return;
+    fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (!data?.id) return;
+        const updated = { id: data.id, email: data.email, username: data.username, currency: data.currency || "USD" };
+        localStorage.setItem("user", JSON.stringify(updated));
+        setCurrentUser(updated);
+      })
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
     fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
       headers: { Authorization: `Bearer ${token}` },
     })
