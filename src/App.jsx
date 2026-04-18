@@ -8,6 +8,8 @@ import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import ResetPasswordPage from "./ResetPasswordPage";
+import ProfileModal from "./ProfileModal";
+import { CurrencyProvider } from "./currency.jsx";
 import { useLang } from "./i18n.jsx";
 
 // ── Nav icons ──────────────────────────────────────────────
@@ -62,6 +64,7 @@ function App() {
     new URLSearchParams(window.location.search).get("reset_token") ? "reset-password" : "login"
   );
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [showProfile, setShowProfile] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
     return saved !== null ? saved === "dark" : true;
@@ -87,6 +90,13 @@ function App() {
     localStorage.setItem("user", JSON.stringify(user));
     setToken(newToken);
     setCurrentUser(user);
+  };
+
+  const handleProfileSave = (updated) => {
+    const newUser = { ...currentUser, username: updated.username, currency: updated.currency };
+    localStorage.setItem("user", JSON.stringify(newUser));
+    setCurrentUser(newUser);
+    setShowProfile(false);
   };
 
   const handleLogout = () => {
@@ -161,6 +171,7 @@ function App() {
 
   // ── Main app ──
   return (
+    <CurrencyProvider code={currentUser?.currency || "USD"}>
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: "var(--bg)" }}>
       <div className="max-w-3xl mx-auto px-4 pt-6 sm:pt-10 pb-24 sm:pb-10">
 
@@ -181,15 +192,21 @@ function App() {
                 <h1 className="fin-serif text-xl sm:text-2xl leading-tight truncate" style={{ color: "var(--text-1)" }}>
                   {t("appName")}
                 </h1>
-                {currentUser?.email && (
+                {(currentUser?.username || currentUser?.email) && (
                   <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-3)" }}>
-                    {currentUser.email}
+                    {currentUser.username || currentUser.email}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setShowProfile(true)} className="fin-icon-btn" title="Profile & Currency">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
               <button onClick={toggleLang} className="fin-icon-btn" title="Switch language">
                 <span className="text-xs font-semibold">{lang === "en" ? "TR" : "EN"}</span>
               </button>
@@ -263,6 +280,15 @@ function App() {
         )}
       </div>
 
+      {showProfile && (
+        <ProfileModal
+          user={currentUser}
+          token={token}
+          onClose={() => setShowProfile(false)}
+          onSave={handleProfileSave}
+        />
+      )}
+
       {/* ── Mobile bottom nav ── */}
       <nav
         className="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center px-6 py-2"
@@ -294,6 +320,7 @@ function App() {
         })}
       </nav>
     </div>
+    </CurrencyProvider>
   );
 }
 

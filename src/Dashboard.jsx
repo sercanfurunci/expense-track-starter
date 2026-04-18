@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useLang } from "./i18n.jsx";
+import { useCurrency } from "./currency.jsx";
 import Summary from "./Summary.jsx";
 
 const catColors = {
@@ -17,6 +18,7 @@ const fmt = (n) =>
 
 function Dashboard({ transactions }) {
   const { t } = useLang();
+  const { symbol } = useCurrency();
 
   const expenses = transactions.filter((tx) => tx.type === "expense");
   const totalExpenses = expenses.reduce((s, tx) => s + parseFloat(tx.amount), 0);
@@ -41,7 +43,7 @@ function Dashboard({ transactions }) {
       <div className="fin-card rounded-xl px-3 py-2 text-sm shadow-lg">
         <p className="font-medium capitalize" style={{ color: "var(--text-1)" }}>{t(name)}</p>
         <p className="fin-mono font-bold" style={{ color: catColors[name] || catColors.other }}>
-          ${fmt(value)}
+          {symbol}{fmt(value)}
         </p>
       </div>
     );
@@ -106,7 +108,7 @@ function Dashboard({ transactions }) {
                     className="fin-mono text-xs font-semibold shrink-0"
                     style={{ color: "var(--text-1)", minWidth: 60, textAlign: "right" }}
                   >
-                    ${fmt(value)}
+                    {symbol}{fmt(value)}
                   </span>
                 </div>
               ))}
@@ -156,7 +158,7 @@ function Dashboard({ transactions }) {
                 className="fin-mono text-sm font-bold shrink-0"
                 style={{ color: tx.type === "income" ? "var(--green)" : "var(--red)" }}
               >
-                {tx.type === "income" ? "+" : "−"}${fmt(tx.amount)}
+                {tx.type === "income" ? "+" : "−"}{symbol}{fmt(tx.amount)}
               </span>
             </div>
           ))}

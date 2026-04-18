@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLang } from "./i18n.jsx";
+import { useCurrency } from "./currency.jsx";
 
 const categories = ["food", "housing", "utilities", "transport", "entertainment", "salary", "other"];
 
@@ -87,6 +88,7 @@ function TrashIcon() {
 
 function TransactionList({ transactions, onDelete, onEdit }) {
   const { t } = useLang();
+  const { symbol } = useCurrency();
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [editingId, setEditingId] = useState(null);
@@ -249,7 +251,7 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                         className="fin-mono text-sm font-bold"
                         style={{ color: tx.type === "income" ? "var(--green)" : "var(--red)" }}
                       >
-                        {tx.type === "income" ? "+" : "−"}${fmt(tx.amount)}
+                        {tx.type === "income" ? "+" : "−"}{symbol}{fmt(tx.amount)}
                       </span>
                       <button
                         onClick={() => startEdit(tx)}
@@ -389,7 +391,7 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                             className="fin-mono text-sm font-bold"
                             style={{ color: tx.type === "income" ? "var(--green)" : "var(--red)" }}
                           >
-                            {tx.type === "income" ? "+" : "−"}${fmt(tx.amount)}
+                            {tx.type === "income" ? "+" : "−"}{symbol}{fmt(tx.amount)}
                           </span>
                         </td>
                         <td className="px-4 py-4">

@@ -8,6 +8,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useLang } from "./i18n.jsx";
+import { useCurrency } from "./currency.jsx";
 
 const catColors = {
   food:          "#F97316",
@@ -52,7 +53,7 @@ function CustomBarTooltip({ active, payload, label }) {
         <div key={p.dataKey} className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: p.fill }} />
           <span style={{ color: "var(--text-1)" }} className="fin-mono font-semibold">
-            ${fmt(p.value)}
+            {symbol}{fmt(p.value)}
           </span>
           <span style={{ color: "var(--text-3)" }}>{p.dataKey === "expenses" ? "Expenses" : "Income"}</span>
         </div>
@@ -63,6 +64,7 @@ function CustomBarTooltip({ active, payload, label }) {
 
 function Analytics({ transactions }) {
   const { t } = useLang();
+  const { symbol } = useCurrency();
 
   if (transactions.length === 0) {
     return (
@@ -126,7 +128,7 @@ function Analytics({ transactions }) {
       <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="Avg Expense"
-          value={`$${fmt(avgExpense)}`}
+          value={`${symbol}${fmt(avgExpense)}`}
           sub={`${expenses.length} expenses total`}
         />
         <StatCard
@@ -141,7 +143,7 @@ function Analytics({ transactions }) {
         />
         <StatCard
           label="Biggest Expense"
-          value={`$${fmt(biggestExpense)}`}
+          value={`${symbol}${fmt(biggestExpense)}`}
           sub={expenses.find((tx) => parseFloat(tx.amount) === biggestExpense)?.description}
         />
       </div>
@@ -168,7 +170,7 @@ function Analytics({ transactions }) {
                 tick={{ fontSize: 9, fill: "var(--text-3)", fontFamily: "JetBrains Mono" }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v) => (v === 0 ? "" : `$${v}`)}
+                tickFormatter={(v) => (v === 0 ? "" : `${symbol}${v}`)}
               />
               <Tooltip content={<CustomBarTooltip />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
               <Bar dataKey="income"   fill="var(--green)" radius={[3, 3, 0, 0]} opacity={0.75} />
@@ -211,7 +213,7 @@ function Analytics({ transactions }) {
                       className="fin-mono text-sm font-semibold"
                       style={{ color: "var(--text-1)", minWidth: 64, textAlign: "right" }}
                     >
-                      ${fmt(value)}
+                      {symbol}{fmt(value)}
                     </span>
                   </div>
                 </div>

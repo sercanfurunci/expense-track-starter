@@ -1,10 +1,12 @@
 import { useLang } from "./i18n.jsx";
+import { useCurrency } from "./currency.jsx";
 
 const fmt = (n) =>
   n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function Summary({ transactions }) {
   const { t } = useLang();
+  const { symbol } = useCurrency();
 
   const totalIncome = transactions
     .filter((tx) => tx.type === "income")
@@ -28,7 +30,7 @@ function Summary({ transactions }) {
           className="fin-serif fin-mono mt-2 text-4xl sm:text-5xl font-bold tracking-tight"
           style={{ color: isPositive ? "var(--gold)" : "var(--red)", letterSpacing: "-0.02em" }}
         >
-          {!isPositive && "−"}${fmt(Math.abs(balance))}
+          {!isPositive && "−"}{symbol}{fmt(Math.abs(balance))}
         </p>
         <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
           {transactions.length} {transactions.length === 1 ? "transaction" : "transactions"} recorded
@@ -49,7 +51,7 @@ function Summary({ transactions }) {
             className="fin-mono text-xl sm:text-2xl font-bold mt-2 tracking-tight"
             style={{ color: "var(--green)", letterSpacing: "-0.02em" }}
           >
-            +${fmt(totalIncome)}
+            +{symbol}{fmt(totalIncome)}
           </p>
           <div className="fin-bar" style={{ background: "var(--green)" }} />
         </div>
@@ -60,7 +62,7 @@ function Summary({ transactions }) {
             className="fin-mono text-xl sm:text-2xl font-bold mt-2 tracking-tight"
             style={{ color: "var(--red)", letterSpacing: "-0.02em" }}
           >
-            −${fmt(totalExpenses)}
+            −{symbol}{fmt(totalExpenses)}
           </p>
           <div className="fin-bar" style={{ background: "var(--red)" }} />
         </div>

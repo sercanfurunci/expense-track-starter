@@ -8,6 +8,8 @@
 //   verify_expires TIMESTAMP,
 //   reset_token TEXT,
 //   reset_expires TIMESTAMP,
+//   username TEXT,
+//   currency TEXT DEFAULT 'USD',
 //   created_at TIMESTAMP DEFAULT NOW()
 // );
 // -- OR if table already exists, run:
@@ -16,6 +18,8 @@
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_expires TIMESTAMP;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP;
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
 // ALTER TABLE transactions ADD COLUMN user_id INTEGER REFERENCES users(id);
 
 require("dotenv").config();
@@ -293,7 +297,7 @@ app.post("/auth/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token, user: { id: user.id, email: user.email } });
+    res.json({ token, user: { id: user.id, email: user.email, username: user.username || null, currency: user.currency || "USD" } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login failed" });
@@ -496,6 +500,54 @@ app.post("/auth/reset-password", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
+/**
+ * @openapi
+ * /auth/me:
+ *   get:
+ *     summary: Get current user profile
+ */
+app.get("/auth/me", authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, email, username, currency FROM users WHERE id = $1",
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "DB error" });
+  }
+});
+
+/**
+ * @openapi
+ * /auth/profile:
+ *   put:
+ *     summary: Update username and/or currency
+ */
+app.put("/auth/profile", authMiddleware, async (req, res) => {
+  const { username, currency } = req.body;
+  const VALID_CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "CHF"];
+  if (currency && !VALID_CURRENCIES.includes(currency)) {
+    return res.status(400).json({ error: "Invalid currency code" });
+  }
+  try {
+    const result = await pool.query(
+      `UPDATE users SET
+        username = COALESCE($1, username),
+        currency = COALESCE($2, currency)
+       WHERE id = $3
+       RETURNING id, email, username, currency`,
+      [username || null, currency || null, req.user.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Update failed" });
   }
 });
 
