@@ -56,7 +56,7 @@ function Dashboard({ transactions }) {
       {/* Category donut */}
       {catData.length > 0 ? (
         <div className="fin-card rounded-2xl p-5">
-          <p className="fin-label mb-4">Expense Breakdown</p>
+          <p className="fin-label mb-4">{t("expenseBreakdown")}</p>
           <div className="flex flex-col sm:flex-row items-center gap-6">
             {/* Donut */}
             <div style={{ width: 180, height: 180, flexShrink: 0 }}>
@@ -119,7 +119,7 @@ function Dashboard({ transactions }) {
         transactions.length === 0 && (
           <div className="fin-card rounded-2xl py-14 text-center">
             <p className="text-sm" style={{ color: "var(--text-3)" }}>
-              Add your first transaction to see insights
+              {t("noTransactionsDash")}
             </p>
           </div>
         )
@@ -129,7 +129,7 @@ function Dashboard({ transactions }) {
       {recent.length > 0 && (
         <div className="fin-card rounded-2xl overflow-hidden">
           <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
-            <p className="fin-label">Recent Activity</p>
+            <p className="fin-label">{t("recentActivity")}</p>
           </div>
           {recent.map((tx, i) => (
             <div

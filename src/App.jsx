@@ -171,6 +171,8 @@ function App() {
         <LandingPage
           onGetStarted={() => setAuthPage("register")}
           onSignIn={() => setAuthPage("login")}
+          isDark={isDark}
+          toggleDark={() => setIsDark((d) => !d)}
         />
       );
     }
@@ -185,9 +187,17 @@ function App() {
             onSuccess={handleAuthSuccess}
             onSwitch={() => setAuthPage("register")}
             onForgotPassword={() => setAuthPage("forgot-password")}
+            onBack={() => setAuthPage("landing")}
+            isDark={isDark}
+            toggleDark={() => setIsDark((d) => !d)}
           />
         ) : (
-          <RegisterPage onSwitch={() => setAuthPage("login")} />
+          <RegisterPage
+            onSwitch={() => setAuthPage("login")}
+            onBack={() => setAuthPage("landing")}
+            isDark={isDark}
+            toggleDark={() => setIsDark((d) => !d)}
+          />
         )}
       </div>
     );

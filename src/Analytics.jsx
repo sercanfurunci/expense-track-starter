@@ -55,7 +55,7 @@ function CustomBarTooltip({ active, payload, label }) {
           <span style={{ color: "var(--text-1)" }} className="fin-mono font-semibold">
             {symbol}{fmt(p.value)}
           </span>
-          <span style={{ color: "var(--text-3)" }}>{p.dataKey === "expenses" ? "Expenses" : "Income"}</span>
+          <span style={{ color: "var(--text-3)" }}>{p.dataKey === "expenses" ? t("expenses") : t("income")}</span>
         </div>
       ))}
     </div>
@@ -70,7 +70,7 @@ function Analytics({ transactions }) {
     return (
       <div className="fin-card rounded-2xl py-16 text-center anim-1">
         <p className="text-sm" style={{ color: "var(--text-3)" }}>
-          Add transactions to see analytics
+          {t("noTransactionsAnalytics")}
         </p>
       </div>
     );
@@ -127,22 +127,22 @@ function Analytics({ transactions }) {
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          label="Avg Expense"
+          label={t("avgExpense")}
           value={`${symbol}${fmt(avgExpense)}`}
           sub={`${expenses.length} expenses total`}
         />
         <StatCard
-          label="Busiest Day"
+          label={t("busiestDay")}
           value={busiestDay.slice(0, 3)}
           sub={busiestDay}
         />
         <StatCard
-          label="Transactions"
+          label={t("transactions")}
           value={transactions.length}
           sub={`${income.length} income · ${expenses.length} expenses`}
         />
         <StatCard
-          label="Biggest Expense"
+          label={t("biggestExpense")}
           value={`${symbol}${fmt(biggestExpense)}`}
           sub={expenses.find((tx) => parseFloat(tx.amount) === biggestExpense)?.description}
         />
@@ -150,7 +150,7 @@ function Analytics({ transactions }) {
 
       {/* Bar chart: last 30 days */}
       <div className="fin-card rounded-2xl p-5">
-        <p className="fin-label mb-4">Last 30 Days</p>
+        <p className="fin-label mb-4">{t("last30Days")}</p>
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={last30} barGap={1} margin={{ top: 4, right: 0, left: -24, bottom: 0 }}>
@@ -179,7 +179,7 @@ function Analytics({ transactions }) {
           </ResponsiveContainer>
         </div>
         <div className="flex gap-5 mt-3 justify-center">
-          {[["var(--green)", "Income"], ["var(--red)", "Expenses"]].map(([color, label]) => (
+          {[[" var(--green)", t("income")], ["var(--red)", t("expenses")]].map(([color, label]) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.75 }} />
               <span className="text-xs" style={{ color: "var(--text-2)" }}>{label}</span>
@@ -191,7 +191,7 @@ function Analytics({ transactions }) {
       {/* Category breakdown */}
       {catData.length > 0 && (
         <div className="fin-card rounded-2xl p-5">
-          <p className="fin-label mb-4">By Category</p>
+          <p className="fin-label mb-4">{t("byCategory")}</p>
           <div className="space-y-4">
             {catData.map(({ cat, value, pct }) => (
               <div key={cat}>

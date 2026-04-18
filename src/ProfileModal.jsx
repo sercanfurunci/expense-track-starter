@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { CURRENCIES } from "./currency.jsx";
+import { useLang } from "./i18n.jsx";
 
 function ProfileModal({ user, token, onClose, onSave }) {
+  const { t } = useLang();
   const [username, setUsername] = useState(user.username || "");
   const [currency, setCurrency] = useState(user.currency || "USD");
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ function ProfileModal({ user, token, onClose, onSave }) {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="fin-serif text-xl" style={{ color: "var(--text-1)" }}>Profile</h2>
+          <h2 className="fin-serif text-xl" style={{ color: "var(--text-1)" }}>{t("profileTitle")}</h2>
           <button
             onClick={onClose}
             className="fin-icon-btn"
@@ -68,11 +70,11 @@ function ProfileModal({ user, token, onClose, onSave }) {
 
         {/* Username */}
         <div className="mb-5">
-          <label className="fin-label block mb-1.5">Display Name</label>
+          <label className="fin-label block mb-1.5">{t("displayName")}</label>
           <input
             type="text"
             className="fin-input"
-            placeholder="Your name"
+            placeholder={t("displayNamePlaceholder")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             maxLength={40}
@@ -81,7 +83,7 @@ function ProfileModal({ user, token, onClose, onSave }) {
 
         {/* Currency */}
         <div className="mb-6">
-          <label className="fin-label block mb-2">Currency</label>
+          <label className="fin-label block mb-2">{t("currencyLabel")}</label>
           <div className="grid grid-cols-4 gap-2">
             {CURRENCIES.map((c) => {
               const isActive = currency === c.code;
@@ -121,14 +123,14 @@ function ProfileModal({ user, token, onClose, onSave }) {
             className="flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all"
             style={{ backgroundColor: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }}
           >
-            Cancel
+            {t("cancelBtn")}
           </button>
           <button
             onClick={handleSave}
             disabled={loading}
             className="flex-1 fin-btn-primary disabled:opacity-50"
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? t("savingBtn") : t("saveBtn")}
           </button>
         </div>
       </div>
