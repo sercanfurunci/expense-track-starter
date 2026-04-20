@@ -1,7 +1,7 @@
 // Required SQL migrations:
 // CREATE TABLE users (
 //   id SERIAL PRIMARY KEY,
-//   email VARCHAR(255) UNIQUE NOT NULL,
+//   email VARCHAR(255) UNIQUE,
 //   password TEXT NOT NULL,
 //   is_verified BOOLEAN DEFAULT FALSE,
 //   verify_token TEXT,
@@ -13,6 +13,7 @@
 //   created_at TIMESTAMP DEFAULT NOW()
 // );
 // -- OR if table already exists, run:
+// ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token TEXT;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_expires TIMESTAMP;
@@ -20,6 +21,8 @@
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT UNIQUE;
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_method TEXT DEFAULT 'email';
 // ALTER TABLE transactions ADD COLUMN user_id INTEGER REFERENCES users(id);
 
 require("dotenv").config();
@@ -33,6 +36,13 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
+const admin = require("firebase-admin");
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
+  });
+}
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -275,13 +285,19 @@ function verifyHtmlPage(message, success) {
  *     summary: Login and receive a JWT token
  */
 app.post("/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password required" });
+  const { email, phone, password } = req.body;
+  if (!password || (!email && !phone)) {
+    return res.status(400).json({ error: "Credentials required" });
   }
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    let result;
+    if (phone) {
+      result = await pool.query("SELECT * FROM users WHERE phone = $1", [phone]);
+    } else {
+      result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    }
+
     if (result.rows.length === 0) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
@@ -293,14 +309,61 @@ app.post("/auth/login", async (req, res) => {
     }
 
     if (!user.is_verified) {
-      return res.status(403).json({ error: "Please verify your email before logging in." });
+      return res.status(403).json({ error: "Please verify your account before logging in." });
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token, user: { id: user.id, email: user.email, username: user.username || null, currency: user.currency || "USD" } });
+    res.json({ token, user: { id: user.id, email: user.email || null, phone: user.phone || null, username: user.username || null, currency: user.currency || "USD" } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+/**
+ * @openapi
+ * /auth/register-phone:
+ *   post:
+ *     summary: Register a new user via SMS OTP (Firebase phone auth)
+ */
+app.post("/auth/register-phone", async (req, res) => {
+  if (!admin.apps.length) {
+    return res.status(503).json({ error: "SMS registration not configured on server" });
+  }
+
+  const { firebaseToken, phone, password } = req.body;
+  if (!firebaseToken || !phone || !password) {
+    return res.status(400).json({ error: "firebaseToken, phone, and password required" });
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(firebaseToken);
+    if (decoded.phone_number !== phone) {
+      return res.status(400).json({ error: "Phone number mismatch" });
+    }
+
+    const existing = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: "Phone number already registered" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+    await pool.query(
+      `INSERT INTO users (phone, password, is_verified, verify_method) VALUES ($1, $2, TRUE, 'sms')`,
+      [phone, password_hash]
+    );
+
+    res.status(201).json({ message: "Account created successfully." });
+  } catch (err) {
+    console.error(err);
+    if (err.code === "auth/id-token-expired") {
+      return res.status(401).json({ error: "Verification expired. Please try again." });
+    }
+    res.status(500).json({ error: "Registration failed" });
   }
 });
 

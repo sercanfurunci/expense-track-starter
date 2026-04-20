@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLang } from "./i18n.jsx";
+import { auth } from "./firebase.js";
+import { signInWithPhoneNumber, RecaptchaVerifier, signOut } from "firebase/auth";
 
 function SunIcon() {
   return (
@@ -35,16 +37,44 @@ function EyeIcon({ open }) {
 
 function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
   const { t, lang, toggleLang } = useLang();
+
+  const [verifyMethod, setVerifyMethod] = useState("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  // 'form' → 'otp' (SMS only) → 'done'
+  const [step, setStep] = useState("form");
+  const [otp, setOtp] = useState("");
 
-  const handleSubmit = async (e) => {
+  const recaptchaVerifierRef = useRef(null);
+  const confirmationResultRef = useRef(null);
+
+  const initRecaptcha = () => {
+    if (!recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+      });
+    }
+    return recaptchaVerifierRef.current;
+  };
+
+  const resetRecaptcha = () => {
+    try {
+      recaptchaVerifierRef.current?.clear();
+    } catch {}
+    recaptchaVerifierRef.current = null;
+    // Also reset the global grecaptcha widget if it exists
+    if (window.grecaptcha) {
+      try { window.grecaptcha.reset(); } catch {}
+    }
+  };
+
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (password !== confirm) { setError(t("passwordMismatch")); return; }
@@ -58,9 +88,55 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Registration failed"); return; }
-      setSent(true);
+      setStep("done");
     } catch {
       setError(t("serverError"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (password !== confirm) { setError(t("passwordMismatch")); return; }
+    if (password.length < 6) { setError(t("passwordTooShort")); return; }
+    if (!phone.trim()) { setError(t("phoneNumber") + " required"); return; }
+    setLoading(true);
+    try {
+      const appVerifier = initRecaptcha();
+      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+      confirmationResultRef.current = result;
+      setStep("otp");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to send SMS. Check the phone number format.");
+      resetRecaptcha();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const credential = await confirmationResultRef.current.confirm(otp);
+      const firebaseToken = await credential.user.getIdToken();
+      await signOut(auth);
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register-phone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firebaseToken, phone, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Registration failed"); return; }
+      setStep("done");
+    } catch (err) {
+      console.error(err);
+      setError(t("invalidOtp"));
     } finally {
       setLoading(false);
     }
@@ -87,35 +163,55 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
     </div>
   );
 
-  if (sent) {
+  const BrandMark = () => (
+    <div className="flex flex-col items-center mb-8">
+      <div
+        className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4"
+        style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      </div>
+      <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>{t("appName")}</h1>
+      <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>{t("appSubtitle")}</p>
+    </div>
+  );
+
+  // Done screen (email: check email / sms: account created)
+  if (step === "done") {
+    const isSms = verifyMethod === "sms";
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
         <TopControls />
         <div className="w-full max-w-sm anim-1">
-          <div className="flex flex-col items-center mb-8">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4"
-              style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-            <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>{t("appName")}</h1>
-          </div>
+          <BrandMark />
           <div className="fin-card rounded-2xl p-8 text-center">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: "rgba(16,185,129,0.12)" }}
+              style={{ backgroundColor: isSms ? "rgba(99,102,241,0.12)" : "rgba(16,185,129,0.12)" }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--green)" }}>
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
+              {isSms ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand)" }}>
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 12 19.79 19.79 0 0 1 1.07 3.4 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--green)" }}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              )}
             </div>
-            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>{t("checkYourEmail")}</h2>
-            <p className="text-sm mb-1" style={{ color: "var(--text-2)" }}>{t("verificationSent")}</p>
-            <p className="text-sm font-medium mb-6" style={{ color: "var(--text-1)" }}>{email}</p>
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>
+              {isSms ? t("accountCreated") : t("checkYourEmail")}
+            </h2>
+            {!isSms && (
+              <>
+                <p className="text-sm mb-1" style={{ color: "var(--text-2)" }}>{t("verificationSent")}</p>
+                <p className="text-sm font-medium mb-6" style={{ color: "var(--text-1)" }}>{email}</p>
+              </>
+            )}
+            {isSms && <div className="mb-6" />}
             <button onClick={onSwitch} className="text-sm font-medium cursor-pointer hover:underline" style={{ color: "var(--brand)" }}>
               {t("backToSignIn")}
             </button>
@@ -125,31 +221,103 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
     );
   }
 
+  // OTP entry screen (SMS only)
+  if (step === "otp") {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <TopControls />
+        <div className="w-full max-w-sm anim-1">
+          <BrandMark />
+          <div className="fin-card rounded-2xl p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                type="button"
+                onClick={() => { setStep("form"); setOtp(""); setError(""); resetRecaptcha(); }}
+                className="flex items-center gap-1 text-xs font-medium cursor-pointer transition-opacity hover:opacity-70"
+                style={{ color: "var(--text-3)", background: "none", border: "none" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+              </button>
+              <h2 className="font-semibold text-base" style={{ color: "var(--text-1)" }}>{t("otpCode")}</h2>
+            </div>
+            <p className="text-sm mb-6" style={{ color: "var(--text-2)" }}>
+              {t("smsSent")} <span className="font-medium" style={{ color: "var(--text-1)" }}>{phone}</span>
+            </p>
+            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+              <div>
+                <label className="fin-label block mb-1.5">{t("otpCode")}</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder={t("otpPlaceholder")}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  className="fin-input text-center fin-mono tracking-widest text-lg"
+                  required
+                  autoFocus
+                />
+              </div>
+              {error && (
+                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                  {error}
+                </div>
+              )}
+              <button type="submit" disabled={loading || otp.length < 6} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
+                {loading ? t("verifyingCode") : t("verifyAndCreate")}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Registration form
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <TopControls />
+      {/* invisible reCAPTCHA anchor */}
+      <div id="recaptcha-container" />
       <div className="w-full max-w-sm anim-1">
-        <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4"
-            style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </div>
-          <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>{t("appName")}</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>{t("appSubtitle")}</p>
-        </div>
-
+        <BrandMark />
         <div className="fin-card rounded-2xl p-6 sm:p-8">
-          <h2 className="font-semibold text-base mb-6" style={{ color: "var(--text-1)" }}>{t("createAccountTitle")}</h2>
+          <h2 className="font-semibold text-base mb-5" style={{ color: "var(--text-1)" }}>{t("createAccountTitle")}</h2>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="fin-label block mb-1.5">{t("email")}</label>
-              <input type="email" placeholder={t("emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} className="fin-input" required autoFocus />
-            </div>
+          {/* Method toggle */}
+          <div className="flex rounded-xl p-1 mb-5" style={{ backgroundColor: "var(--surface-2, var(--bg))", border: "1px solid var(--border)" }}>
+            {["email", "sms"].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setVerifyMethod(m); setError(""); }}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                style={{
+                  background: verifyMethod === m ? "var(--brand)" : "transparent",
+                  color: verifyMethod === m ? "#fff" : "var(--text-3)",
+                  border: "none",
+                }}
+              >
+                {m === "email" ? t("verifyMethodEmail") : t("verifyMethodSms")}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={verifyMethod === "email" ? handleEmailSubmit : handleSendOtp} className="flex flex-col gap-4">
+            {verifyMethod === "email" ? (
+              <div>
+                <label className="fin-label block mb-1.5">{t("email")}</label>
+                <input type="email" placeholder={t("emailPlaceholder")} value={email} onChange={(e) => setEmail(e.target.value)} className="fin-input" required autoFocus />
+              </div>
+            ) : (
+              <div>
+                <label className="fin-label block mb-1.5">{t("phoneNumber")}</label>
+                <input type="tel" placeholder={t("phonePlaceholder")} value={phone} onChange={(e) => setPhone(e.target.value)} className="fin-input" required autoFocus />
+              </div>
+            )}
 
             <div>
               <label className="fin-label block mb-1.5">{t("password")}</label>
@@ -194,7 +362,9 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
             )}
 
             <button type="submit" disabled={loading} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
-              {loading ? t("creatingAccount") : t("createAccountBtn")}
+              {verifyMethod === "email"
+                ? (loading ? t("creatingAccount") : t("createAccountBtn"))
+                : (loading ? t("sendingCode") : t("sendCode"))}
             </button>
           </form>
 

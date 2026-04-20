@@ -44,7 +44,7 @@ function StatCard({ label, value, sub }) {
   );
 }
 
-function CustomBarTooltip({ active, payload, label }) {
+function CustomBarTooltip({ active, payload, label, symbol, t }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="fin-card rounded-xl px-3 py-2 text-xs shadow-lg space-y-1">
@@ -172,7 +172,7 @@ function Analytics({ transactions }) {
                 axisLine={false}
                 tickFormatter={(v) => (v === 0 ? "" : `${symbol}${v}`)}
               />
-              <Tooltip content={<CustomBarTooltip />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
+              <Tooltip content={<CustomBarTooltip symbol={symbol} t={t} />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
               <Bar dataKey="income"   fill="var(--green)" radius={[3, 3, 0, 0]} opacity={0.75} />
               <Bar dataKey="expenses" fill="var(--red)"   radius={[3, 3, 0, 0]} opacity={0.75} />
             </BarChart>

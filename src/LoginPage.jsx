@@ -36,7 +36,9 @@ function EyeIcon({ open }) {
 
 function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, toggleDark }) {
   const { t, lang, toggleLang } = useLang();
+  const [loginMethod, setLoginMethod] = useState("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -47,10 +49,13 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
     setError("");
     setLoading(true);
     try {
+      const body = loginMethod === "email"
+        ? { email, password }
+        : { phone, password };
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Login failed"); return; }
@@ -85,7 +90,6 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
       </div>
 
       <div className="w-full max-w-sm anim-1">
-
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8">
           <div
@@ -97,45 +101,75 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
-          <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>
-            {t("appName")}
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>
-            {t("appSubtitle")}
-          </p>
+          <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>{t("appName")}</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-3)" }}>{t("appSubtitle")}</p>
         </div>
 
         {/* Card */}
         <div className="fin-card rounded-2xl p-6 sm:p-8">
-          <h2 className="font-semibold text-base mb-6" style={{ color: "var(--text-1)" }}>
-            {t("signInTitle")}
-          </h2>
+          <h2 className="font-semibold text-base mb-5" style={{ color: "var(--text-1)" }}>{t("signInTitle")}</h2>
+
+          {/* Method toggle */}
+          <div className="flex rounded-xl p-1 mb-5" style={{ backgroundColor: "var(--surface-2, var(--bg))", border: "1px solid var(--border)" }}>
+            {["email", "sms"].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setLoginMethod(m); setError(""); }}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                style={{
+                  background: loginMethod === m ? "var(--brand)" : "transparent",
+                  color: loginMethod === m ? "#fff" : "var(--text-3)",
+                  border: "none",
+                }}
+              >
+                {m === "email" ? t("verifyMethodEmail") : t("verifyMethodSms")}
+              </button>
+            ))}
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="fin-label block mb-1.5">{t("email")}</label>
-              <input
-                type="email"
-                placeholder={t("emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="fin-input"
-                required
-                autoFocus
-              />
-            </div>
+            {loginMethod === "email" ? (
+              <div>
+                <label className="fin-label block mb-1.5">{t("email")}</label>
+                <input
+                  type="email"
+                  placeholder={t("emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="fin-input"
+                  required
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="fin-label block mb-1.5">{t("phoneNumber")}</label>
+                <input
+                  type="tel"
+                  placeholder={t("phonePlaceholder")}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="fin-input"
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="fin-label">{t("password")}</label>
-                <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-xs font-medium cursor-pointer hover:underline"
-                  style={{ color: "var(--brand)" }}
-                >
-                  {t("forgotPassword")}
-                </button>
+                {loginMethod === "email" && (
+                  <button
+                    type="button"
+                    onClick={onForgotPassword}
+                    className="text-xs font-medium cursor-pointer hover:underline"
+                    style={{ color: "var(--brand)" }}
+                  >
+                    {t("forgotPassword")}
+                  </button>
+                )}
               </div>
               <div className="relative">
                 <input
@@ -162,32 +196,20 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
             {error && (
               <div
                 className="text-sm rounded-xl px-4 py-2.5"
-                style={{
-                  color: "var(--red)",
-                  backgroundColor: "rgba(248,113,113,0.08)",
-                  border: "1px solid rgba(248,113,113,0.2)",
-                }}
+                style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}
               >
                 {error}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="fin-btn-primary w-full mt-1 disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
               {loading ? t("signingIn") : t("signInBtn")}
             </button>
           </form>
 
           <p className="text-center text-sm mt-6" style={{ color: "var(--text-2)" }}>
             {t("noAccount")}{" "}
-            <button
-              onClick={onSwitch}
-              className="font-medium cursor-pointer hover:underline"
-              style={{ color: "var(--brand)" }}
-            >
+            <button onClick={onSwitch} className="font-medium cursor-pointer hover:underline" style={{ color: "var(--brand)" }}>
               {t("registerLink")}
             </button>
           </p>
