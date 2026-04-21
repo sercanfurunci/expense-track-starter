@@ -65,20 +65,25 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const isProd       = process.env.NODE_ENV === "production";
 
-// [FIX 1] Security headers
-app.use(helmet());
-
+// CORS must run before helmet so credentials header isn't stripped
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin.startsWith("http://localhost:") || origin === FRONTEND_URL) {
+    if (
+      !origin ||
+      origin.startsWith("http://localhost:") ||
+      origin === FRONTEND_URL ||
+      origin.endsWith(".vercel.app")
+    ) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true, // required for cross-origin cookies
+  credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
+
+app.use(helmet());
 
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
