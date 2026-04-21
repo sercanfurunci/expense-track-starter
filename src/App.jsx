@@ -92,6 +92,7 @@ function App() {
   // On mount: restore session from localStorage token
   useEffect(() => {
     if (resetToken) { setAuthChecked(true); return; }
+    if (!localStorage.getItem("auth_token")) { setAuthChecked(true); return; }
     authFetch(`${API}/auth/me`)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
