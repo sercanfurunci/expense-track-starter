@@ -55,11 +55,12 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Login failed"); return; }
-      onSuccess(data.token, data.user);
+      onSuccess(data.user);
     } catch {
       setError(t("serverError"));
     } finally {
