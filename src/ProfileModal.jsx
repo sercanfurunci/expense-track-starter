@@ -4,9 +4,24 @@ import { useLang } from "./i18n.jsx";
 import { auth } from "./firebase.js";
 import { signInWithPhoneNumber, RecaptchaVerifier, signOut } from "firebase/auth";
 
-function authHeader() {
+function apiFetch(url, opts = {}) {
   const token = localStorage.getItem("auth_token");
-  return token ? { ...authHeader() } : {};
+  return fetch(url, {
+    ...opts,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...opts.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
+
+async function checkAvailability(endpoint) {
+  const res = await apiFetch(`${import.meta.env.VITE_API_URL}${endpoint}`);
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
+  return res.ok ? null : (data.error || "Not available");
 }
 
 function ProfileModal({ user, onClose, onSave }) {
@@ -37,9 +52,8 @@ function ProfileModal({ user, onClose, onSave }) {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ username: username.trim() || null, currency }),
       });
       const data = await res.json();
@@ -71,15 +85,8 @@ function ProfileModal({ user, onClose, onSave }) {
     setLinkError("");
     setLinkLoading(true);
     try {
-      const check = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/check-phone?phone=${encodeURIComponent(linkPhone)}`,
-        { headers: authHeader() }
-      );
-      if (!check.ok) {
-        const d = await check.json();
-        setLinkError(d.error || "Phone not available");
-        return;
-      }
+      const phoneErr = await checkAvailability(`/auth/check-phone?phone=${encodeURIComponent(linkPhone)}`);
+      if (phoneErr) { setLinkError(phoneErr); return; }
       const appVerifier = initRecaptcha();
       const result = await signInWithPhoneNumber(auth, linkPhone, appVerifier);
       confirmationResultRef.current = result;
@@ -109,9 +116,8 @@ function ProfileModal({ user, onClose, onSave }) {
       const firebaseToken = await credential.user.getIdToken();
       await signOut(auth);
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/link-phone`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/link-phone`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ firebaseToken, phone: linkPhone }),
       });
       const data = await res.json();
@@ -133,18 +139,10 @@ function ProfileModal({ user, onClose, onSave }) {
     setLinkError("");
     setLinkLoading(true);
     try {
-      const check = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/check-email?email=${encodeURIComponent(linkEmail)}`,
-        { headers: authHeader() }
-      );
-      if (!check.ok) {
-        const d = await check.json();
-        setLinkError(d.error || "Email not available");
-        return;
-      }
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/link-email`, {
+      const emailErr = await checkAvailability(`/auth/check-email?email=${encodeURIComponent(linkEmail)}`);
+      if (emailErr) { setLinkError(emailErr); return; }
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/link-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ email: linkEmail }),
       });
       const data = await res.json();
