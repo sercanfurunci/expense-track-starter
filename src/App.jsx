@@ -13,6 +13,8 @@ import LandingPage from "./LandingPage";
 import { CurrencyProvider } from "./currency.jsx";
 import { useLang } from "./i18n.jsx";
 
+const API = import.meta.env.VITE_API_URL;
+
 // ── Nav icons ──────────────────────────────────────────────
 function IconDashboard({ active }) {
   return (
@@ -53,10 +55,9 @@ const TABS = [
 function App() {
   const { t, lang, toggleLang } = useLang();
   const [transactions, setTransactions] = useState([]);
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [currentUser, setCurrentUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("user")) || null; } catch { return null; }
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  // false = still checking auth on mount; true = check complete
+  const [authChecked, setAuthChecked] = useState(false);
   const [resetToken] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("reset_token") || null;
@@ -76,49 +77,54 @@ function App() {
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
+  // On mount: verify session via httpOnly cookie (skip if on reset-password flow)
   useEffect(() => {
-    if (!token) return;
-    fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    if (resetToken) { setAuthChecked(true); return; }
+    fetch(`${API}/auth/me`, { credentials: "include" })
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
-        if (!data?.id) return;
-        const updated = { id: data.id, email: data.email, phone: data.phone || null, username: data.username, currency: data.currency || "USD" };
-        localStorage.setItem("user", JSON.stringify(updated));
-        setCurrentUser(updated);
+        if (data?.id) {
+          setCurrentUser({
+            id: data.id,
+            email: data.email || null,
+            phone: data.phone || null,
+            username: data.username || null,
+            currency: data.currency || "USD",
+          });
+        }
       })
-      .catch(() => {});
-  }, [token]);
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch transactions whenever the user logs in
   useEffect(() => {
-    if (!token) return;
-    fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    if (!currentUser) return;
+    fetch(`${API}/transactions`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => Array.isArray(data) && setTransactions(data))
       .catch((err) => console.log(err));
-  }, [token]);
+  }, [currentUser?.id]);
 
-  const handleAuthSuccess = (newToken, user) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(user));
-    setToken(newToken);
+  const handleAuthSuccess = (user) => {
     setCurrentUser(user);
   };
 
   const handleProfileSave = (updated) => {
-    const newUser = { ...currentUser, username: updated.username, currency: updated.currency, email: updated.email ?? currentUser.email, phone: updated.phone ?? currentUser.phone };
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setCurrentUser(newUser);
+    setCurrentUser((prev) => ({
+      ...prev,
+      username: updated.username,
+      currency: updated.currency,
+      email:    updated.email  ?? prev.email,
+      phone:    updated.phone  ?? prev.phone,
+    }));
     setShowProfile(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {}
     setCurrentUser(null);
     setTransactions([]);
     setAuthPage("landing");
@@ -126,9 +132,10 @@ function App() {
 
   const handleAdd = async (transaction) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions`, {
+      const res = await fetch(`${API}/transactions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(transaction),
       });
       const data = await res.json();
@@ -140,9 +147,9 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/transactions/${id}`, {
+      await fetch(`${API}/transactions/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       setTransactions((prev) => prev.filter((tx) => tx.id !== id));
     } catch (err) {
@@ -152,9 +159,10 @@ function App() {
 
   const handleEdit = async (id, updated) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/transactions/${id}`, {
+      const res = await fetch(`${API}/transactions/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(updated),
       });
       const data = await res.json();
@@ -164,8 +172,17 @@ function App() {
     }
   };
 
+  // ── Loading state while cookie auth check runs ──
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--brand)", borderTopColor: "transparent" }} />
+      </div>
+    );
+  }
+
   // ── Auth screens ──
-  if (!token) {
+  if (!currentUser) {
     if (authPage === "landing") {
       return (
         <LandingPage
@@ -294,30 +311,21 @@ function App() {
         </div>
 
         {/* ── Page content ── */}
-        {activeTab === "dashboard" && (
-          <Dashboard transactions={transactions} />
-        )}
+        {activeTab === "dashboard" && <Dashboard transactions={transactions} />}
 
         {activeTab === "transactions" && (
           <div className="anim-1">
             <TransactionForm onAdd={handleAdd} />
-            <TransactionList
-              transactions={transactions}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-            />
+            <TransactionList transactions={transactions} onDelete={handleDelete} onEdit={handleEdit} />
           </div>
         )}
 
-        {activeTab === "analytics" && (
-          <Analytics transactions={transactions} />
-        )}
+        {activeTab === "analytics" && <Analytics transactions={transactions} />}
       </div>
 
       {showProfile && (
         <ProfileModal
           user={currentUser}
-          token={token}
           onClose={() => setShowProfile(false)}
           onSave={handleProfileSave}
         />

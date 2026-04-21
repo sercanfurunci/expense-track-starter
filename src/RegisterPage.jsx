@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useLang } from "./i18n.jsx";
 import { auth } from "./firebase.js";
 import { signInWithPhoneNumber, RecaptchaVerifier, signOut } from "firebase/auth";
+import { PasswordStrength, validatePassword } from "./PasswordStrength.jsx";
 
 function SunIcon() {
   return (
@@ -77,8 +78,9 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    const pwError = validatePassword(password, t);
+    if (pwError) { setError(pwError); return; }
     if (password !== confirm) { setError(t("passwordMismatch")); return; }
-    if (password.length < 6) { setError(t("passwordTooShort")); return; }
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
@@ -99,8 +101,9 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
+    const pwError = validatePassword(password, t);
+    if (pwError) { setError(pwError); return; }
     if (password !== confirm) { setError(t("passwordMismatch")); return; }
-    if (password.length < 6) { setError(t("passwordTooShort")); return; }
     if (!phone.trim()) { setError(t("phoneNumber") + " required"); return; }
     setLoading(true);
     try {
@@ -167,7 +170,7 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
     <div className="flex flex-col items-center mb-8">
       <div
         className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4"
-        style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
+        style={{ backgroundColor: "var(--brand)" }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -335,6 +338,7 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
                   <EyeIcon open={showPassword} />
                 </button>
               </div>
+              <PasswordStrength password={password} />
             </div>
 
             <div>

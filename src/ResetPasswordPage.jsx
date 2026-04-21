@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useLang } from "./i18n.jsx";
+import { PasswordStrength, validatePassword } from "./PasswordStrength.jsx";
 
 function EyeIcon({ open }) {
   return open ? (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ) : (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
   );
 }
@@ -24,22 +25,12 @@ function ResetPasswordPage({ resetToken, onBack }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const inputClass =
-    "block w-full appearance-none bg-white border border-slate-300 text-slate-800 placeholder-slate-400 dark:bg-slate-700/50 dark:border-slate-600/50 dark:text-white dark:placeholder-slate-400 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition";
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (password.length < 6) {
-      setError(t("passwordTooShort"));
-      return;
-    }
-    if (password !== confirm) {
-      setError(t("passwordMismatch"));
-      return;
-    }
-
+    const pwError = validatePassword(password, t);
+    if (pwError) { setError(pwError); return; }
+    if (password !== confirm) { setError(t("passwordMismatch")); return; }
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-password`, {
@@ -48,10 +39,7 @@ function ResetPasswordPage({ resetToken, onBack }) {
         body: JSON.stringify({ token: resetToken, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Something went wrong");
-        return;
-      }
+      if (!res.ok) { setError(data.error || "Something went wrong"); return; }
       setSuccess(true);
       window.history.replaceState({}, "", "/");
     } catch {
@@ -62,96 +50,83 @@ function ResetPasswordPage({ resetToken, onBack }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-3 justify-center mb-8">
-          <div className="w-10 h-10 rounded-xl bg-violet-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-            $
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm anim-1">
+
+        {/* Brand */}
+        <div className="flex flex-col items-center mb-8">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-4"
+            style={{ backgroundColor: "var(--brand)" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            {t("appName")}
-          </h1>
+          <h1 className="fin-serif text-2xl" style={{ color: "var(--text-1)" }}>{t("appName")}</h1>
         </div>
 
-        <div className="bg-white border border-slate-200 dark:bg-slate-800/60 dark:border-slate-700/50 backdrop-blur rounded-2xl p-5 sm:p-8 shadow-sm dark:shadow-xl">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">
+        <div className="fin-card rounded-2xl p-6 sm:p-8">
+          <h2 className="font-semibold text-base mb-6" style={{ color: "var(--text-1)" }}>
             {t("resetPasswordTitle")}
           </h2>
 
           {success ? (
             <div className="text-center">
-              <p className="text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl px-4 py-3 mb-6">
+              <div className="text-sm rounded-xl px-4 py-3 mb-6" style={{ color: "var(--green)", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
                 {t("resetSuccess")}
-              </p>
-              <button
-                onClick={onBack}
-                className="bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm rounded-xl px-6 py-2.5 transition shadow-lg shadow-violet-900/30 cursor-pointer"
-              >
+              </div>
+              <button onClick={onBack} className="fin-btn-primary w-full">
                 {t("signInBtn")}
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5">
-                  {t("newPassword")}
-                </label>
+                <label className="fin-label block mb-1.5">{t("newPassword")}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`${inputClass} pr-10`}
+                    className="fin-input"
+                    style={{ paddingRight: "40px" }}
                     required
                     autoFocus
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
-                    tabIndex={-1}
-                  >
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer transition-opacity hover:opacity-60" style={{ color: "var(--text-3)" }} tabIndex={-1}>
                     <EyeIcon open={showPassword} />
                   </button>
                 </div>
+                <PasswordStrength password={password} />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5">
-                  {t("confirmPassword")}
-                </label>
+                <label className="fin-label block mb-1.5">{t("confirmPassword")}</label>
                 <div className="relative">
                   <input
                     type={showConfirm ? "text" : "password"}
                     placeholder="••••••••"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    className={`${inputClass} pr-10`}
+                    className="fin-input"
+                    style={{ paddingRight: "40px" }}
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
-                    tabIndex={-1}
-                  >
+                  <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer transition-opacity hover:opacity-60" style={{ color: "var(--text-3)" }} tabIndex={-1}>
                     <EyeIcon open={showConfirm} />
                   </button>
                 </div>
               </div>
 
               {error && (
-                <p className="text-rose-600 dark:text-rose-400 text-sm bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl px-4 py-2.5">
+                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
                   {error}
-                </p>
+                </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-violet-600 hover:bg-violet-500 active:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl px-6 py-2.5 transition shadow-lg shadow-violet-900/30 cursor-pointer mt-1"
-              >
+              <button type="submit" disabled={loading} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
                 {loading ? t("resettingPassword") : t("resetPassword")}
               </button>
             </form>
