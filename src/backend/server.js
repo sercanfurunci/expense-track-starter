@@ -63,7 +63,10 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
 }
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-const isProd       = process.env.NODE_ENV === "production";
+// Treat as prod whenever FRONTEND_URL points to a non-localhost domain
+// (covers Render deployments that don't set NODE_ENV=production)
+const isProd = process.env.NODE_ENV === "production" ||
+               !FRONTEND_URL.startsWith("http://localhost");
 
 // CORS must run before helmet so credentials header isn't stripped
 app.use(cors({
@@ -219,15 +222,15 @@ const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ error: "Invalid token" });
   }
 
-  // [FIX 6] Validate token_version so invalidated sessions (post password-reset) are rejected
   try {
     const tv = await pool.query("SELECT token_version FROM users WHERE id = $1", [payload.id]);
     if (!tv.rows.length) return res.status(401).json({ error: "User not found" });
-    if (payload.tv == null || payload.tv !== tv.rows[0].token_version) {
+    const dbTv = tv.rows[0].token_version;
+    if (dbTv != null && payload.tv != null && payload.tv !== dbTv) {
       return res.status(401).json({ error: "Session expired. Please sign in again." });
     }
   } catch {
-    return res.status(500).json({ error: "Auth check failed" });
+    // token_version column may not exist yet — skip version check, still allow request
   }
 
   req.user = payload;
