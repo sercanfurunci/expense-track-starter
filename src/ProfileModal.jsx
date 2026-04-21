@@ -4,7 +4,12 @@ import { useLang } from "./i18n.jsx";
 import { auth } from "./firebase.js";
 import { signInWithPhoneNumber, RecaptchaVerifier, signOut } from "firebase/auth";
 
-function ProfileModal({ user, token, onClose, onSave }) {
+function authHeader() {
+  const token = localStorage.getItem("auth_token");
+  return token ? { ...authHeader() } : {};
+}
+
+function ProfileModal({ user, onClose, onSave }) {
   const { t } = useLang();
   const [username, setUsername] = useState(user.username || "");
   const [currency, setCurrency] = useState(user.currency || "USD");
@@ -34,7 +39,7 @@ function ProfileModal({ user, token, onClose, onSave }) {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ username: username.trim() || null, currency }),
       });
       const data = await res.json();
@@ -89,7 +94,7 @@ function ProfileModal({ user, token, onClose, onSave }) {
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/link-phone`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ firebaseToken, phone: linkPhone }),
       });
       const data = await res.json();
@@ -113,7 +118,7 @@ function ProfileModal({ user, token, onClose, onSave }) {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/link-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", ...authHeader() },
         body: JSON.stringify({ email: linkEmail }),
       });
       const data = await res.json();

@@ -52,6 +52,18 @@ const TABS = [
   { id: "analytics",   label: "Analytics",    Icon: IconAnalytics },
 ];
 
+function authFetch(url, opts = {}) {
+  const token = localStorage.getItem("auth_token");
+  return fetch(url, {
+    ...opts,
+    credentials: "include",
+    headers: {
+      ...opts.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
+
 function App() {
   const { t, lang, toggleLang } = useLang();
   const [transactions, setTransactions] = useState([]);
@@ -77,10 +89,10 @@ function App() {
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-  // On mount: verify session via httpOnly cookie (skip if on reset-password flow)
+  // On mount: restore session from localStorage token
   useEffect(() => {
     if (resetToken) { setAuthChecked(true); return; }
-    fetch(`${API}/auth/me`, { credentials: "include" })
+    authFetch(`${API}/auth/me`)
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data?.id) {
@@ -100,13 +112,14 @@ function App() {
   // Fetch transactions whenever the user logs in
   useEffect(() => {
     if (!currentUser) return;
-    fetch(`${API}/transactions`, { credentials: "include" })
+    authFetch(`${API}/transactions`)
       .then((res) => res.json())
       .then((data) => Array.isArray(data) && setTransactions(data))
       .catch((err) => console.log(err));
   }, [currentUser?.id]);
 
-  const handleAuthSuccess = (user) => {
+  const handleAuthSuccess = (user, token) => {
+    if (token) localStorage.setItem("auth_token", token);
     setCurrentUser(user);
   };
 
@@ -123,8 +136,9 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+      await authFetch(`${API}/auth/logout`, { method: "POST" });
     } catch {}
+    localStorage.removeItem("auth_token");
     setCurrentUser(null);
     setTransactions([]);
     setAuthPage("landing");
@@ -132,10 +146,9 @@ function App() {
 
   const handleAdd = async (transaction) => {
     try {
-      const res = await fetch(`${API}/transactions`, {
+      const res = await authFetch(`${API}/transactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(transaction),
       });
       const data = await res.json();
@@ -147,9 +160,8 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`${API}/transactions/${id}`, {
+      await authFetch(`${API}/transactions/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
       setTransactions((prev) => prev.filter((tx) => tx.id !== id));
     } catch (err) {
@@ -159,10 +171,9 @@ function App() {
 
   const handleEdit = async (id, updated) => {
     try {
-      const res = await fetch(`${API}/transactions/${id}`, {
+      const res = await authFetch(`${API}/transactions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(updated),
       });
       const data = await res.json();

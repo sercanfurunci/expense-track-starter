@@ -59,10 +59,9 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      console.log("Login response:", res.status, data);
       if (!res.ok) { setError(data.error || "Login failed"); return; }
       if (!data?.user) { setError("Login error: no user data. Please try again."); return; }
-      onSuccess(data.user);
+      onSuccess(data.user, data.token);
     } catch {
       setError(t("serverError"));
     } finally {

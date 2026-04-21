@@ -382,9 +382,9 @@ app.post("/auth/login", async (req, res) => {
       algorithm: "HS256",
     });
 
-    // [FIX 7] Set httpOnly cookie instead of returning token in body
     res.cookie("token", jwtToken, COOKIE_OPTS);
     res.json({
+      token: jwtToken,
       user: {
         id: user.id,
         email: user.email || null,
