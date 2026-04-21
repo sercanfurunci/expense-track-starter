@@ -84,7 +84,7 @@ function App() {
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (!data?.id) return;
-        const updated = { id: data.id, email: data.email, username: data.username, currency: data.currency || "USD" };
+        const updated = { id: data.id, email: data.email, phone: data.phone || null, username: data.username, currency: data.currency || "USD" };
         localStorage.setItem("user", JSON.stringify(updated));
         setCurrentUser(updated);
       })
@@ -109,7 +109,7 @@ function App() {
   };
 
   const handleProfileSave = (updated) => {
-    const newUser = { ...currentUser, username: updated.username, currency: updated.currency };
+    const newUser = { ...currentUser, username: updated.username, currency: updated.currency, email: updated.email ?? currentUser.email, phone: updated.phone ?? currentUser.phone };
     localStorage.setItem("user", JSON.stringify(newUser));
     setCurrentUser(newUser);
     setShowProfile(false);

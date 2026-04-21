@@ -23,6 +23,7 @@
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT UNIQUE;
 // ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_method TEXT DEFAULT 'email';
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email TEXT;
 // ALTER TABLE transactions ADD COLUMN user_id INTEGER REFERENCES users(id);
 
 require("dotenv").config();
@@ -575,7 +576,7 @@ app.post("/auth/reset-password", async (req, res) => {
 app.get("/auth/me", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, email, username, currency FROM users WHERE id = $1",
+      "SELECT id, email, phone, username, currency FROM users WHERE id = $1",
       [req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -611,6 +612,95 @@ app.put("/auth/profile", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Update failed" });
+  }
+});
+
+app.post("/auth/link-phone", authMiddleware, async (req, res) => {
+  if (!admin.apps.length) return res.status(503).json({ error: "SMS not configured on server" });
+  const { firebaseToken, phone } = req.body;
+  if (!firebaseToken || !phone) return res.status(400).json({ error: "firebaseToken and phone required" });
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(firebaseToken);
+    if (decoded.phone_number !== phone) return res.status(400).json({ error: "Phone number mismatch" });
+
+    const existing = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (existing.rows.length > 0) return res.status(409).json({ error: "Phone already linked to another account" });
+
+    const result = await pool.query(
+      "UPDATE users SET phone = $1 WHERE id = $2 RETURNING id, email, phone, username, currency",
+      [phone, req.user.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to link phone" });
+  }
+});
+
+app.post("/auth/link-email", authMiddleware, async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
+
+  try {
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    if (existing.rows.length > 0) return res.status(409).json({ error: "Email already linked to another account" });
+
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await pool.query(
+      "UPDATE users SET pending_email = $1, verify_token = $2, verify_expires = $3 WHERE id = $4",
+      [email, verifyToken, verifyExpires, req.user.id]
+    );
+
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:3000"}/auth/link-email/verify?token=${verifyToken}`;
+    await transporter.sendMail({
+      from: `"Finance Tracker" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: "Link your email to Finance Tracker",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8fafc;border-radius:16px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-block;background:#7c3aed;color:#fff;font-size:22px;font-weight:bold;width:48px;height:48px;line-height:48px;border-radius:12px;">$</div>
+            <h2 style="margin:12px 0 4px;color:#1e293b;">Finance Tracker</h2>
+          </div>
+          <div style="background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0;">
+            <p style="color:#334155;margin:0 0 20px;">Click the button below to link this email to your account. This link expires in <strong>24 hours</strong>.</p>
+            <a href="${verifyUrl}" style="display:block;text-align:center;background:#7c3aed;color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:15px;">Link Email</a>
+          </div>
+        </div>
+      `,
+    });
+
+    res.json({ message: "Verification email sent." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to send verification email" });
+  }
+});
+
+app.get("/auth/link-email/verify", async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).send("Missing token");
+
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE verify_token = $1", [token]);
+    if (result.rows.length === 0) return res.status(400).send(verifyHtmlPage("Invalid or already used link.", false));
+
+    const user = result.rows[0];
+    if (new Date() > new Date(user.verify_expires)) return res.status(400).send(verifyHtmlPage("Link has expired.", false));
+    if (!user.pending_email) return res.status(400).send(verifyHtmlPage("No pending email to link.", false));
+
+    await pool.query(
+      "UPDATE users SET email = $1, pending_email = NULL, verify_token = NULL, verify_expires = NULL WHERE id = $2",
+      [user.pending_email, user.id]
+    );
+
+    res.send(verifyHtmlPage("Email linked successfully! You can now sign in with your email.", true));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
 
