@@ -367,8 +367,10 @@ app.post("/auth/login", async (req, res) => {
     if (!await bcrypt.compare(password, user.password))
       return res.status(401).json({ error: "Invalid credentials" });
 
-    if (!user.is_verified)
-      return res.status(403).json({ error: "Please verify your account before logging in." });
+    // Only block if there is an active pending verification token (accounts created before
+    // email verification was added have is_verified=false but no verify_token — allow those)
+    if (!user.is_verified && user.verify_token)
+      return res.status(403).json({ error: "Please verify your email before logging in. Check your inbox." });
 
     const tv = user.token_version ?? 0;
     // [FIX 2] Explicit algorithm on sign
