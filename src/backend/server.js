@@ -586,6 +586,34 @@ app.put("/auth/profile", authMiddleware, async (req, res) => {
   }
 });
 
+app.get("/auth/check-phone", authMiddleware, async (req, res) => {
+  const phone = isValidPhone(req.query.phone);
+  if (!phone) return res.status(400).json({ error: "Valid phone number required (E.164 format)" });
+  try {
+    const existing = await pool.query("SELECT id FROM users WHERE phone = $1", [phone]);
+    if (existing.rows.length > 0)
+      return res.status(409).json({ error: "Phone number is already linked to another account" });
+    res.json({ available: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Check failed" });
+  }
+});
+
+app.get("/auth/check-email", authMiddleware, async (req, res) => {
+  const email = isValidEmail(req.query.email);
+  if (!email) return res.status(400).json({ error: "Valid email required" });
+  try {
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+    if (existing.rows.length > 0)
+      return res.status(409).json({ error: "Email is already linked to another account" });
+    res.json({ available: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Check failed" });
+  }
+});
+
 app.post("/auth/link-phone", authMiddleware, async (req, res) => {
   if (!admin.apps.length) return res.status(503).json({ error: "SMS not configured on server" });
 

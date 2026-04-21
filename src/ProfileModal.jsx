@@ -71,6 +71,15 @@ function ProfileModal({ user, onClose, onSave }) {
     setLinkError("");
     setLinkLoading(true);
     try {
+      const check = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/check-phone?phone=${encodeURIComponent(linkPhone)}`,
+        { headers: authHeader() }
+      );
+      if (!check.ok) {
+        const d = await check.json();
+        setLinkError(d.error || "Phone not available");
+        return;
+      }
       const appVerifier = initRecaptcha();
       const result = await signInWithPhoneNumber(auth, linkPhone, appVerifier);
       confirmationResultRef.current = result;
@@ -87,8 +96,16 @@ function ProfileModal({ user, onClose, onSave }) {
     e.preventDefault();
     setLinkError("");
     setLinkLoading(true);
+    let credential;
     try {
-      const credential = await confirmationResultRef.current.confirm(otp);
+      credential = await confirmationResultRef.current.confirm(otp);
+    } catch {
+      setLinkError(t("invalidOtp"));
+      setLinkLoading(false);
+      return;
+    }
+
+    try {
       const firebaseToken = await credential.user.getIdToken();
       await signOut(auth);
 
@@ -104,7 +121,7 @@ function ProfileModal({ user, onClose, onSave }) {
       setLinkSuccess(t("linkPhoneSuccess"));
       onSave({ ...user, phone: linkPhone });
     } catch {
-      setLinkError(t("invalidOtp"));
+      setLinkError(t("serverError"));
     } finally {
       setLinkLoading(false);
     }
@@ -116,6 +133,15 @@ function ProfileModal({ user, onClose, onSave }) {
     setLinkError("");
     setLinkLoading(true);
     try {
+      const check = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/check-email?email=${encodeURIComponent(linkEmail)}`,
+        { headers: authHeader() }
+      );
+      if (!check.ok) {
+        const d = await check.json();
+        setLinkError(d.error || "Email not available");
+        return;
+      }
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/link-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeader() },
@@ -220,16 +246,20 @@ function ProfileModal({ user, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Success message */}
+          {/* Success / error messages — always visible regardless of step */}
           {linkSuccess && (
             <p className="text-xs mt-2 text-center font-medium" style={{ color: "var(--green)" }}>{linkSuccess}</p>
+          )}
+          {linkError && (
+            <div className="mt-2 text-xs rounded-xl px-3 py-2" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+              {linkError}
+            </div>
           )}
 
           {/* Link phone form */}
           {linkStep === "phone-form" && (
             <form onSubmit={handleSendLinkOtp} className="mt-3 space-y-2">
               <input type="tel" placeholder={t("phonePlaceholder")} value={linkPhone} onChange={(e) => setLinkPhone(e.target.value)} className="fin-input" required autoFocus />
-              {linkError && <p className="text-xs" style={{ color: "var(--red)" }}>{linkError}</p>}
               <div className="flex gap-2">
                 <button type="button" onClick={resetLink} className="flex-1 py-2 rounded-xl text-xs font-medium cursor-pointer" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }}>{t("cancelBtn")}</button>
                 <button type="submit" disabled={linkLoading} className="flex-1 fin-btn-primary disabled:opacity-50 text-xs py-2">{linkLoading ? t("sendingCode") : t("sendCode")}</button>
@@ -242,7 +272,6 @@ function ProfileModal({ user, onClose, onSave }) {
             <form onSubmit={handleVerifyLinkOtp} className="mt-3 space-y-2">
               <p className="text-xs" style={{ color: "var(--text-2)" }}>{t("smsSent")} <span className="font-medium">{linkPhone}</span></p>
               <input type="text" inputMode="numeric" maxLength={6} placeholder={t("otpPlaceholder")} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} className="fin-input text-center fin-mono tracking-widest" required autoFocus />
-              {linkError && <p className="text-xs" style={{ color: "var(--red)" }}>{linkError}</p>}
               <div className="flex gap-2">
                 <button type="button" onClick={resetLink} className="flex-1 py-2 rounded-xl text-xs font-medium cursor-pointer" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }}>{t("cancelBtn")}</button>
                 <button type="submit" disabled={linkLoading || otp.length < 6} className="flex-1 fin-btn-primary disabled:opacity-50 text-xs py-2">{linkLoading ? t("verifyingCode") : t("verifyAndCreate")}</button>
@@ -254,7 +283,6 @@ function ProfileModal({ user, onClose, onSave }) {
           {linkStep === "email-form" && (
             <form onSubmit={handleSendLinkEmail} className="mt-3 space-y-2">
               <input type="email" placeholder={t("emailPlaceholder")} value={linkEmail} onChange={(e) => setLinkEmail(e.target.value)} className="fin-input" required autoFocus />
-              {linkError && <p className="text-xs" style={{ color: "var(--red)" }}>{linkError}</p>}
               <div className="flex gap-2">
                 <button type="button" onClick={resetLink} className="flex-1 py-2 rounded-xl text-xs font-medium cursor-pointer" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }}>{t("cancelBtn")}</button>
                 <button type="submit" disabled={linkLoading} className="flex-1 fin-btn-primary disabled:opacity-50 text-xs py-2">{linkLoading ? t("sendingResetLink") : t("linkBtn")}</button>
