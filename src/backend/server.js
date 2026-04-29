@@ -813,8 +813,10 @@ const upload = multer({
 });
 
 async function extractPdfText(buffer) {
-  const data = await pdfParse(buffer);
-  return data.text;
+  const { PDFParse } = pdfParse;
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  await parser.load();
+  return parser.getText();
 }
 
 function categorize(desc) {
