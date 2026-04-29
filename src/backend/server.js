@@ -843,6 +843,10 @@ Each item must have exactly these fields:
   type        – "expense" or "income"
   category    – one of: food, housing, utilities, transport, entertainment, salary, other
 
+CRITICAL — number format: Turkish/European receipts use . as thousands separator and , as decimal.
+Examples: 18.410,00 = 18410.00 | 1.250,50 = 1250.50 | 99,90 = 99.90
+Always output amount as a plain decimal number (e.g. 18410, not 18.41).
+
 Category rules:
   food          → restaurants, cafes, supermarkets, food delivery
   housing       → rent, mortgage
