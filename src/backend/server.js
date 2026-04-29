@@ -838,6 +838,13 @@ const TR_MONTHS = {
   eylül: "09", ekim: "10", kasım: "11", aralık: "12",
 };
 
+// JS /i flag doesn't case-fold Turkish İ/ı — normalize before regex testing
+function trNorm(s) {
+  return s.replace(/İ/g,"I").replace(/ı/g,"i").replace(/Ğ/g,"G").replace(/ğ/g,"g")
+          .replace(/Ş/g,"S").replace(/ş/g,"s").replace(/Ü/g,"U").replace(/ü/g,"u")
+          .replace(/Ö/g,"O").replace(/ö/g,"o");
+}
+
 function parseTRMonthDate(str) {
   // "DD Month YYYY" or "D Month YYYY"
   const m = str.trim().match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
@@ -852,34 +859,34 @@ function parseYapiKrediStatement(text) {
   const monthNames = Object.keys(TR_MONTHS).map(k =>
     k.charAt(0).toUpperCase() + k.slice(1)
   ).join("|");
+  // pdf-parse gives single-space separated text (no column alignment)
   const lineRe = new RegExp(
-    `^\\s+(\\d{1,2}\\s+(?:${monthNames})\\s+\\d{4})\\s{2,}(.+?)\\s{3,}(\\+?[\\d.]+,\\d{2})(?:\\s.*)?$`,
+    `^(\\d{1,2})\\s+(${monthNames})\\s+(\\d{4})\\s+(.+?)\\s+(\\+?[\\d.]+,\\d{2})(?:\\s.*)?$`,
     "i"
   );
+  const skipRe = /FAIZ|EKSTREDEN|^ODEME-/;
 
   for (const rawLine of text.split("\n")) {
-    const m = rawLine.match(lineRe);
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m = line.match(lineRe);
     if (!m) continue;
 
-    const [, dateStr, rawDesc, amountStr] = m;
-    const isCredit = amountStr.startsWith("+");
-    const cleanAmount = amountStr.replace(/^\+/, "");
-    const amount = parseTRAmount(cleanAmount);
-    if (amount <= 0 || amount >= 1_000_000_000) continue;
+    const [, day, monthStr, year, rawDesc, amountStr] = m;
+    const month = TR_MONTHS[trNorm(monthStr).toLowerCase()];
+    if (!month) continue;
 
     const desc = rawDesc.trim();
+    if (skipRe.test(trNorm(desc))) continue;
 
-    // Skip payments, interest, and currency transfers
-    if (/^dönem\s+faizi/i.test(desc)) continue;
-    if (/^gecikme\s+faizi/i.test(desc)) continue;
-    if (/ekstreden\s+transfer/i.test(desc)) continue;
-    if (/kredi\s+karti\s+ödemesi/i.test(desc)) continue;
-    if (/hesap\s+özeti\s+ödemesi/i.test(desc)) continue;
+    const date = `${year}-${month}-${day.padStart(2, "0")}`;
+    const isCredit = amountStr.startsWith("+");
+    const amount = parseTRAmount(amountStr.replace(/^\+/, ""));
+    if (amount <= 0 || amount >= 1_000_000_000) continue;
 
-    const date = parseTRMonthDate(dateStr);
-    if (!date) continue;
+    const type = isCredit && /iade/i.test(desc) ? "income" : isCredit ? null : "expense";
+    if (!type) continue;
 
-    const type = isCredit ? "income" : "expense";
     transactions.push({ date, description: desc, amount, type, category: categorize(desc) });
   }
 
@@ -950,7 +957,7 @@ function parseGenericStatement(text) {
 }
 
 function detectBankAndParse(text) {
-  if (/yapi\s*ve\s*kredi\s*bankasi|worldcard/i.test(text)) {
+  if (/worldpuan|worldcard|yapi.*kredi/i.test(trNorm(text))) {
     return parseYapiKrediStatement(text);
   }
   if (/ziraat/i.test(text)) {
