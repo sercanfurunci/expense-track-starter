@@ -819,8 +819,6 @@ const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic.default()
   : null;
 
-const VALID_CATEGORIES = ["food","housing","utilities","transport","entertainment","salary","other"];
-
 async function parseWithAI(buffer, mimeType) {
   if (!anthropic) throw new Error("ANTHROPIC_API_KEY not set");
 
@@ -872,7 +870,7 @@ Return only the JSON array.` }
     description: String(tx.description || "").trim(),
     amount:      Math.abs(Number(tx.amount)),
     type:        tx.type === "income" ? "income" : "expense",
-    category:    VALID_CATEGORIES.includes(tx.category) ? tx.category : "other",
+    category:    VALID_CATEGORIES.has(tx.category) ? tx.category : "other",
   })).filter(tx => tx.description && tx.amount > 0 && tx.amount < 1_000_000_000 && /^\d{4}-\d{2}-\d{2}$/.test(tx.date));
 }
 
