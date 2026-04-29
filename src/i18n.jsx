@@ -148,6 +148,8 @@ const translations = {
     importImporting: "Importing…",
     importSuccess: ({ count }) => `Successfully imported ${count} transactions!`,
     importDoneBtn: "Done",
+    importSave: "Save",
+    importDeleteTx: "Remove",
 
     // Profile modal
     profileTitle: "Profile",
@@ -331,6 +333,8 @@ const translations = {
     importImporting: "Aktarılıyor…",
     importSuccess: ({ count }) => `${count} işlem başarıyla içe aktarıldı!`,
     importDoneBtn: "Tamam",
+    importSave: "Kaydet",
+    importDeleteTx: "Kaldır",
 
     // Profile modal
     profileTitle: "Profil",
