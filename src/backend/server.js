@@ -816,7 +816,8 @@ async function extractPdfText(buffer) {
   const { PDFParse } = pdfParse;
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   await parser.load();
-  return parser.getText();
+  const result = await parser.getText();
+  return result.text;
 }
 
 function categorize(desc) {
