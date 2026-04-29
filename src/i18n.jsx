@@ -138,6 +138,17 @@ const translations = {
     last30Days: "Last 30 Days",
     byCategory: "By Category",
 
+    // Statement import
+    importStatement: "Import Statement",
+    importStatementDesc: "Upload a Ziraat Bank or Yapı Kredi credit card statement (PDF) to automatically import all transactions.",
+    importChooseFile: "Choose PDF file",
+    importParsing: "Reading PDF…",
+    importPreviewDesc: ({ count }) => `Found ${count} transactions. Review and confirm to import.`,
+    importConfirm: ({ count }) => `Import ${count} transactions`,
+    importImporting: "Importing…",
+    importSuccess: ({ count }) => `Successfully imported ${count} transactions!`,
+    importDoneBtn: "Done",
+
     // Profile modal
     profileTitle: "Profile",
     displayName: "Display Name",
@@ -310,6 +321,17 @@ const translations = {
     last30Days: "Son 30 Gün",
     byCategory: "Kategoriye Göre",
 
+    // Statement import
+    importStatement: "Ekstre İçe Aktar",
+    importStatementDesc: "Ziraat Bankası kredi kartı ekstrenizi (PDF) yükleyin, işlemler otomatik eklensin.",
+    importChooseFile: "PDF dosyası seç",
+    importParsing: "PDF okunuyor…",
+    importPreviewDesc: ({ count }) => `${count} işlem bulundu. İnceleyip onaylayın.`,
+    importConfirm: ({ count }) => `${count} işlemi içe aktar`,
+    importImporting: "Aktarılıyor…",
+    importSuccess: ({ count }) => `${count} işlem başarıyla içe aktarıldı!`,
+    importDoneBtn: "Tamam",
+
     // Profile modal
     profileTitle: "Profil",
     displayName: "Görünen Ad",
@@ -351,7 +373,10 @@ const LangContext = createContext();
 export function LangProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem("lang") || "en");
 
-  const t = (key) => translations[lang][key] ?? key;
+  const t = (key, params) => {
+    const val = translations[lang][key] ?? key;
+    return typeof val === "function" ? val(params) : val;
+  };
 
   const toggleLang = () => {
     const next = lang === "en" ? "tr" : "en";

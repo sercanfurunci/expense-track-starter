@@ -41,6 +41,8 @@ const crypto     = require("crypto");
 const swaggerUi  = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const admin      = require("firebase-admin");
+const multer     = require("multer");
+const { spawn }  = require("child_process");
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
   admin.initializeApp({
@@ -796,6 +798,244 @@ app.delete("/transactions/:id", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Delete error" });
+  }
+});
+
+// ─── Statement Import ─────────────────────────────────────────────────────────
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") cb(null, true);
+    else cb(new Error("Only PDF files are allowed"));
+  },
+});
+
+function extractPdfText(buffer) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn("pdftotext", ["-layout", "-", "-"]);
+    let out = "", err = "";
+    proc.stdout.on("data", d => { out += d; });
+    proc.stderr.on("data", d => { err += d; });
+    proc.on("close", code => {
+      if (code !== 0) reject(new Error(err || "pdftotext exited with code " + code));
+      else resolve(out);
+    });
+    proc.on("error", reject);
+    proc.stdin.write(buffer);
+    proc.stdin.end();
+  });
+}
+
+function categorize(desc) {
+  if (/tikla gelsin|şok[- ]|bim[- ]|migros|carrefour|tazedirekt|market|restoran|cafe|kafe/i.test(desc)) return "food";
+  if (/toplu ta[sş]ıma|otob[üu][sş]|metro |tren |taksi|taxi|uber|bisiklet/i.test(desc)) return "transport";
+  if (/spotify|netflix|youtube|openai|chatgpt|steam|playstation|disney|twitch/i.test(desc)) return "entertainment";
+  if (/elektrik|su fatura|doğalgaz|internet|ttnet|turk telekom|vodafone|turkcell/i.test(desc)) return "utilities";
+  return "other";
+}
+
+function parseTRAmount(str) {
+  return parseFloat(str.replace(/\./g, "").replace(",", "."));
+}
+
+const TR_MONTHS = {
+  ocak: "01", şubat: "02", mart: "03", nisan: "04",
+  mayıs: "05", haziran: "06", temmuz: "07", ağustos: "08",
+  eylül: "09", ekim: "10", kasım: "11", aralık: "12",
+};
+
+function parseTRMonthDate(str) {
+  // "DD Month YYYY" or "D Month YYYY"
+  const m = str.trim().match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
+  if (!m) return null;
+  const month = TR_MONTHS[m[2].toLowerCase()];
+  if (!month) return null;
+  return `${m[3]}-${month}-${m[1].padStart(2, "0")}`;
+}
+
+function parseYapiKrediStatement(text) {
+  const transactions = [];
+  const monthNames = Object.keys(TR_MONTHS).map(k =>
+    k.charAt(0).toUpperCase() + k.slice(1)
+  ).join("|");
+  const lineRe = new RegExp(
+    `^\\s+(\\d{1,2}\\s+(?:${monthNames})\\s+\\d{4})\\s{2,}(.+?)\\s{3,}(\\+?[\\d.]+,\\d{2})(?:\\s.*)?$`,
+    "i"
+  );
+
+  for (const rawLine of text.split("\n")) {
+    const m = rawLine.match(lineRe);
+    if (!m) continue;
+
+    const [, dateStr, rawDesc, amountStr] = m;
+    const isCredit = amountStr.startsWith("+");
+    const cleanAmount = amountStr.replace(/^\+/, "");
+    const amount = parseTRAmount(cleanAmount);
+    if (amount <= 0 || amount >= 1_000_000_000) continue;
+
+    const desc = rawDesc.trim();
+
+    // Skip payments, interest, and currency transfers
+    if (/^dönem\s+faizi/i.test(desc)) continue;
+    if (/^gecikme\s+faizi/i.test(desc)) continue;
+    if (/ekstreden\s+transfer/i.test(desc)) continue;
+    if (/kredi\s+karti\s+ödemesi/i.test(desc)) continue;
+    if (/hesap\s+özeti\s+ödemesi/i.test(desc)) continue;
+
+    const date = parseTRMonthDate(dateStr);
+    if (!date) continue;
+
+    const type = isCredit ? "income" : "expense";
+    transactions.push({ date, description: desc, amount, type, category: categorize(desc) });
+  }
+
+  return transactions;
+}
+
+function parseGenericStatement(text) {
+  const transactions = [];
+
+  // Date patterns: DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY
+  const dmyRe = /(\d{2}[/.\-]\d{2}[/.\-]\d{4})/;
+  // Date pattern: DD Month YYYY (Turkish month names)
+  const monthNames = Object.keys(TR_MONTHS).map(k => k.charAt(0).toUpperCase() + k.slice(1)).join("|");
+  const trMonthRe = new RegExp(`(\\d{1,2}\\s+(?:${monthNames})\\s+\\d{4})`, "i");
+
+  // Amount: optional +/-, digits with dots/commas, ends with ,XX (Turkish format)
+  const amountRe = /([+-]?[\d.]+,\d{2})\s*$/;
+
+  // Skip-list: common non-transaction lines
+  const skipRe = /hesaptan\s+ödeme|^kkdf|kredi faizi|taksit faizi|bsmv|dönem faizi|gecikme faizi|ekstreden transfer|kredi karti ödemesi|hesap özeti ödemesi|toplam|tutar|bakiye|limit|borç|alacak|minimum ödeme|son ödeme/i;
+
+  for (const rawLine of text.split("\n")) {
+    const amountMatch = rawLine.match(amountRe);
+    if (!amountMatch) continue;
+
+    let date = null;
+    let descStart = 0;
+    let descEnd = rawLine.lastIndexOf(amountMatch[0]);
+
+    const dmyMatch = rawLine.match(dmyRe);
+    const trMonthMatch = rawLine.match(trMonthRe);
+
+    if (dmyMatch) {
+      const parts = dmyMatch[1].replace(/[.-]/g, "/").split("/");
+      date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      descStart = rawLine.indexOf(dmyMatch[1]) + dmyMatch[1].length;
+    } else if (trMonthMatch) {
+      date = parseTRMonthDate(trMonthMatch[1]);
+      descStart = rawLine.indexOf(trMonthMatch[1]) + trMonthMatch[1].length;
+    } else {
+      continue;
+    }
+
+    if (!date) continue;
+
+    const desc = rawLine.slice(descStart, descEnd).trim().replace(/\s+/g, " ");
+    if (!desc || desc.length < 2) continue;
+    if (skipRe.test(desc)) continue;
+
+    const isCredit = amountMatch[1].startsWith("+");
+    const amount = parseTRAmount(amountMatch[1].replace(/^\+/, ""));
+    if (amount <= 0 || amount >= 1_000_000_000) continue;
+
+    const type = isCredit && /iade/i.test(desc) ? "income" : isCredit ? null : "expense";
+    if (!type) continue;
+
+    transactions.push({ date, description: desc, amount, type, category: categorize(desc) });
+  }
+
+  // Deduplicate: same date+description+amount may appear twice (e.g. statement date vs transaction date)
+  const seen = new Set();
+  return transactions.filter(tx => {
+    const key = `${tx.date}|${tx.description}|${tx.amount}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function detectBankAndParse(text) {
+  if (/yapi\s*ve\s*kredi\s*bankasi|worldcard/i.test(text)) {
+    return parseYapiKrediStatement(text);
+  }
+  if (/ziraat/i.test(text)) {
+    return parseZiraatStatement(text);
+  }
+  // Generic fallback for any other bank
+  return parseGenericStatement(text);
+}
+
+function parseZiraatStatement(text) {
+  const transactions = [];
+  // Layout line: [optional space] DD/MM/YYYY  DESCRIPTION  [INSTALLMENT INFO]  AMOUNT[+]
+  const lineRe = /^\s*(\d{2}\/\d{2}\/\d{4})\s{2,}(.+?)\s{3,}([\d.]+,\d{2})(\+)?\s*$/;
+
+  for (const rawLine of text.split("\n")) {
+    const m = rawLine.match(lineRe);
+    if (!m) continue;
+
+    const [, dateStr, rawDesc, amountStr, plus] = m;
+    const isCredit = plus === "+";
+
+    // Remove installment suffix from description (e.g. "854,80 TL İşlemin 3/3 Taksidi")
+    const desc = rawDesc.replace(/\s{3,}[\d.,]+\s+TL.*$/i, "").trim();
+
+    // Skip payments to credit card
+    if (/hesaptan\s+ödeme/i.test(desc)) continue;
+    // Skip bank fees and interest
+    if (/^(kkdf|kredi faizi|taksit faizi|bsmv)/i.test(desc)) continue;
+
+    const [dd, mm, yyyy] = dateStr.split("/");
+    const date = `${yyyy}-${mm}-${dd}`;
+    const amount = parseTRAmount(amountStr);
+    if (amount <= 0 || amount >= 1_000_000_000) continue;
+
+    // Refunds (Satis Iade with +) → income; regular charges → expense
+    const type = isCredit && /iade/i.test(desc) ? "income" : "expense";
+    if (isCredit && type !== "income") continue; // skip non-refund credits
+
+    transactions.push({ date, description: desc, amount, type, category: categorize(desc) });
+  }
+
+  return transactions;
+}
+
+app.post("/transactions/import", authMiddleware, upload.single("statement"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "PDF file required" });
+
+  let text;
+  try {
+    text = await extractPdfText(req.file.buffer);
+  } catch {
+    return res.status(422).json({
+      error: "Could not read PDF. Make sure poppler-utils (pdftotext) is installed on the server.",
+    });
+  }
+
+  const parsed = detectBankAndParse(text);
+  if (parsed.length === 0) {
+    return res.status(422).json({ error: "No transactions found. Please upload a Ziraat Bank or Yapı Kredi credit card statement." });
+  }
+
+  if (req.query.preview === "true") {
+    return res.json({ transactions: parsed });
+  }
+
+  try {
+    for (const tx of parsed) {
+      await pool.query(
+        `INSERT INTO transactions (description, amount, type, category, date, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [tx.description, tx.amount, tx.type, tx.category, tx.date, req.user.id]
+      );
+    }
+    res.json({ imported: parsed.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to import transactions" });
   }
 });
 

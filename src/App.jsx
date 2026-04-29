@@ -110,14 +110,18 @@ function App() {
       .finally(() => setAuthChecked(true));
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch transactions whenever the user logs in
-  useEffect(() => {
-    if (!currentUser) return;
+  const refreshTransactions = () => {
     authFetch(`${API}/transactions`)
       .then((res) => res.json())
       .then((data) => Array.isArray(data) && setTransactions(data))
       .catch((err) => console.log(err));
-  }, [currentUser?.id]);
+  };
+
+  // Fetch transactions whenever the user logs in
+  useEffect(() => {
+    if (!currentUser) return;
+    refreshTransactions();
+  }, [currentUser?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthSuccess = (user, token) => {
     if (token) localStorage.setItem("auth_token", token);
@@ -327,7 +331,7 @@ function App() {
 
         {activeTab === "transactions" && (
           <div className="anim-1">
-            <TransactionForm onAdd={handleAdd} />
+            <TransactionForm onAdd={handleAdd} onRefresh={refreshTransactions} />
             <TransactionList transactions={transactions} onDelete={handleDelete} onEdit={handleEdit} />
           </div>
         )}
