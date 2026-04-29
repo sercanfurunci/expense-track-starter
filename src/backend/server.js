@@ -42,7 +42,7 @@ const swaggerUi  = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const admin      = require("firebase-admin");
 const multer     = require("multer");
-const { spawn }  = require("child_process");
+const pdfParse   = require("pdf-parse");
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
   admin.initializeApp({
@@ -812,20 +812,9 @@ const upload = multer({
   },
 });
 
-function extractPdfText(buffer) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn("pdftotext", ["-layout", "-", "-"]);
-    let out = "", err = "";
-    proc.stdout.on("data", d => { out += d; });
-    proc.stderr.on("data", d => { err += d; });
-    proc.on("close", code => {
-      if (code !== 0) reject(new Error(err || "pdftotext exited with code " + code));
-      else resolve(out);
-    });
-    proc.on("error", reject);
-    proc.stdin.write(buffer);
-    proc.stdin.end();
-  });
+async function extractPdfText(buffer) {
+  const data = await pdfParse(buffer);
+  return data.text;
 }
 
 function categorize(desc) {
@@ -1011,7 +1000,7 @@ app.post("/transactions/import", authMiddleware, upload.single("statement"), asy
     text = await extractPdfText(req.file.buffer);
   } catch {
     return res.status(422).json({
-      error: "Could not read PDF. Make sure poppler-utils (pdftotext) is installed on the server.",
+      error: "Could not read PDF. Make sure the file is a valid, text-based PDF.",
     });
   }
 
