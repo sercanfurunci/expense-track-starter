@@ -57,13 +57,10 @@ export default function StatementImportModal({ onClose, onImported }) {
     setError(null);
 
     try {
-      const form = new FormData();
-      form.append("statement", selectedFile);
-
-      const res = await fetch(`${API}/transactions/import`, {
+      const res = await fetch(`${API}/transactions/import/bulk`, {
         method: "POST",
-        headers: authHeader(),
-        body: form,
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ transactions: preview }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");

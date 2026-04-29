@@ -1120,4 +1120,24 @@ app.post("/transactions/import", authMiddleware, upload.single("statement"), asy
   }
 });
 
+app.post("/transactions/import/bulk", authMiddleware, async (req, res) => {
+  const { transactions } = req.body;
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return res.status(400).json({ error: "No transactions provided" });
+  }
+  try {
+    for (const tx of transactions) {
+      await pool.query(
+        `INSERT INTO transactions (description, amount, type, category, date, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [tx.description, Math.abs(Number(tx.amount)) || 0, tx.type, tx.category, tx.date, req.user.id]
+      );
+    }
+    res.json({ imported: transactions.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to import transactions" });
+  }
+});
+
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
