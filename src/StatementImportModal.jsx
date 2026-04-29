@@ -19,23 +19,10 @@ export default function StatementImportModal({ onClose, onImported }) {
   const [preview, setPreview] = useState([]);
   const [importedCount, setImportedCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [editingIdx, setEditingIdx] = useState(null);
-  const [editDraft, setEditDraft] = useState(null);
-
   const CATEGORIES = ["food","housing","utilities","transport","entertainment","salary","other"];
 
-  function startEdit(i) {
-    setEditingIdx(i);
-    setEditDraft({ ...preview[i] });
-  }
-  function cancelEdit() { setEditingIdx(null); setEditDraft(null); }
-  function saveEdit() {
-    setPreview(prev => prev.map((tx, i) => i === editingIdx ? { ...editDraft, amount: Math.abs(Number(editDraft.amount)) || 0 } : tx));
-    setEditingIdx(null); setEditDraft(null);
-  }
   function deleteTx(i) {
     setPreview(prev => prev.filter((_, idx) => idx !== i));
-    if (editingIdx === i) { setEditingIdx(null); setEditDraft(null); }
   }
 
   async function handleFile(e) {
@@ -241,97 +228,63 @@ export default function StatementImportModal({ onClose, onImported }) {
                 {t("importPreviewDesc", { count: preview.length })}
               </p>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 360, overflowY: "auto" }}>
-                {preview.map((tx, i) => editingIdx === i ? (
-                  /* ── edit row ── */
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 400, overflowY: "auto" }}>
+                {preview.map((tx, i) => (
                   <div key={i} style={{
                     background: "var(--surface-2)",
-                    border: "1px solid var(--brand)",
+                    border: "1px solid var(--border)",
                     borderRadius: 10,
                     padding: "10px 12px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: 8,
+                    gap: 7,
                   }}>
+                    {/* description */}
                     <input
                       className="fin-input"
                       style={{ fontSize: 13 }}
-                      value={editDraft.description}
-                      onChange={e => setEditDraft(d => ({ ...d, description: e.target.value }))}
+                      value={tx.description}
+                      onChange={e => setPreview(p => p.map((r, idx) => idx === i ? { ...r, description: e.target.value } : r))}
                     />
+                    {/* amount + date */}
                     <div style={{ display: "flex", gap: 6 }}>
                       <input
                         className="fin-input fin-mono"
                         type="number"
                         style={{ flex: 1, fontSize: 13, textAlign: "right" }}
-                        value={editDraft.amount}
-                        onChange={e => setEditDraft(d => ({ ...d, amount: e.target.value }))}
+                        value={tx.amount}
+                        onChange={e => setPreview(p => p.map((r, idx) => idx === i ? { ...r, amount: e.target.value } : r))}
                       />
                       <input
                         className="fin-input"
                         type="date"
                         style={{ flex: 1, fontSize: 13 }}
-                        value={editDraft.date}
-                        onChange={e => setEditDraft(d => ({ ...d, date: e.target.value }))}
+                        value={tx.date}
+                        onChange={e => setPreview(p => p.map((r, idx) => idx === i ? { ...r, date: e.target.value } : r))}
                       />
                     </div>
-                    <div style={{ display: "flex", gap: 6 }}>
+                    {/* type + category + delete */}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       <div className="type-toggle" style={{ flexShrink: 0 }}>
-                        <button type="button" className={`type-btn ${editDraft.type === "income" ? "active-income" : ""}`}
-                          onClick={() => setEditDraft(d => ({ ...d, type: "income" }))}>+ {t("incomeOption")}</button>
-                        <button type="button" className={`type-btn ${editDraft.type === "expense" ? "active-expense" : ""}`}
-                          onClick={() => setEditDraft(d => ({ ...d, type: "expense" }))}>− {t("expenseOption")}</button>
+                        <button type="button" className={`type-btn ${tx.type === "income" ? "active-income" : ""}`}
+                          onClick={() => setPreview(p => p.map((r, idx) => idx === i ? { ...r, type: "income" } : r))}>
+                          + {t("incomeOption")}
+                        </button>
+                        <button type="button" className={`type-btn ${tx.type === "expense" ? "active-expense" : ""}`}
+                          onClick={() => setPreview(p => p.map((r, idx) => idx === i ? { ...r, type: "expense" } : r))}>
+                          − {t("expenseOption")}
+                        </button>
                       </div>
                       <select className="fin-select" style={{ flex: 1, fontSize: 13 }}
-                        value={editDraft.category}
-                        onChange={e => setEditDraft(d => ({ ...d, category: e.target.value }))}>
+                        value={tx.category}
+                        onChange={e => setPreview(p => p.map((r, idx) => idx === i ? { ...r, category: e.target.value } : r))}>
                         {CATEGORIES.map(c => <option key={c} value={c}>{t(c)}</option>)}
                       </select>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      <button onClick={() => deleteTx(i)} style={{
-                        padding: "5px 12px", borderRadius: 7, border: "1px solid var(--border)",
-                        background: "transparent", color: "var(--red)", fontSize: 12.5,
-                        fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
-                      }}>{t("importDeleteTx")}</button>
-                      <button onClick={cancelEdit} style={{
-                        padding: "5px 12px", borderRadius: 7, border: "1px solid var(--border)",
-                        background: "var(--surface)", color: "var(--text-2)", fontSize: 12.5,
-                        fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
-                      }}>{t("cancelBtn")}</button>
-                      <button onClick={saveEdit} className="fin-btn-primary" style={{ padding: "5px 14px", fontSize: 12.5 }}>
-                        {t("importSave")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* ── read row ── */
-                  <div key={i}
-                    className={`tx-row ${tx.type === "income" ? "tx-income" : "tx-expense"}`}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 10px 9px 14px", borderRadius: 8 }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {tx.description}
-                      </span>
-                      <span style={{ fontSize: 11, color: "var(--text-3)", marginTop: 1 }}>
-                        {tx.date} · {t(tx.category)}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      <span className="fin-mono" style={{ fontSize: 13, fontWeight: 600, color: tx.type === "income" ? "var(--green)" : "var(--red)" }}>
-                        {formatAmount(tx.amount, tx.type)}
-                      </span>
-                      <button onClick={() => startEdit(i)} style={{
-                        width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)",
-                        background: "var(--surface-2)", cursor: "pointer", display: "flex",
-                        alignItems: "center", justifyContent: "center", flexShrink: 0,
-                      }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                      </button>
+                      <button onClick={() => deleteTx(i)} title={t("importDeleteTx")} style={{
+                        width: 28, height: 28, borderRadius: 7, border: "1px solid var(--border)",
+                        background: "transparent", color: "var(--red)", fontSize: 15,
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>✕</button>
                     </div>
                   </div>
                 ))}
