@@ -30,7 +30,6 @@ export default function StatementImportModal({ onClose, onImported }) {
     try {
       const form = new FormData();
       form.append("statement", file);
-
       const res = await fetch(`${API}/transactions/import?preview=true`, {
         method: "POST",
         headers: authHeader(),
@@ -147,7 +146,7 @@ export default function StatementImportModal({ onClose, onImported }) {
 
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
                 onChange={handleFile}
                 className="hidden"
                 id="statement-file"
@@ -205,7 +204,7 @@ export default function StatementImportModal({ onClose, onImported }) {
                       <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>
                         {t("importChooseFile")}
                       </div>
-                      <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>PDF only</div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>PDF, JPG, PNG, WEBP</div>
                     </div>
                   </>
                 )}

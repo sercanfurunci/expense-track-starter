@@ -42,6 +42,7 @@ const swaggerUi  = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const admin      = require("firebase-admin");
 const multer     = require("multer");
+const Anthropic  = require("@anthropic-ai/sdk");
 const pdfParse   = require("pdf-parse");
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
@@ -803,14 +804,77 @@ app.delete("/transactions/:id", authMiddleware, async (req, res) => {
 
 // ─── Statement Import ─────────────────────────────────────────────────────────
 
+const ALLOWED_MIMES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === "application/pdf") cb(null, true);
-    else cb(new Error("Only PDF files are allowed"));
+    if (ALLOWED_MIMES.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only PDF or image files (JPG, PNG, WEBP) are allowed"));
   },
 });
+
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic.default()
+  : null;
+
+const VALID_CATEGORIES = ["food","housing","utilities","transport","entertainment","salary","other"];
+
+async function parseWithAI(buffer, mimeType) {
+  if (!anthropic) throw new Error("ANTHROPIC_API_KEY not set");
+
+  const b64 = buffer.toString("base64");
+  const contentBlock = mimeType === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } }
+    : { type: "image",    source: { type: "base64", media_type: mimeType, data: b64 } };
+
+  const response = await anthropic.messages.create({
+    model: "claude-opus-4-7",
+    max_tokens: 4096,
+    messages: [{
+      role: "user",
+      content: [
+        contentBlock,
+        { type: "text", text: `Extract all transactions from this bank or credit card statement.
+Return ONLY a valid JSON array — no markdown, no explanation.
+Each item must have exactly these fields:
+  date        – YYYY-MM-DD
+  description – merchant or transaction name (string)
+  amount      – positive number, no currency symbols
+  type        – "expense" or "income"
+  category    – one of: food, housing, utilities, transport, entertainment, salary, other
+
+Category rules:
+  food          → restaurants, cafes, supermarkets, food delivery
+  housing       → rent, mortgage
+  utilities     → electricity, water, gas, internet, phone bills
+  transport     → fuel, public transit, taxi, rideshare, car payments
+  entertainment → streaming services, games, cinema, sports
+  salary        → salary, wages, payroll
+  other         → everything else
+
+Skip: interest/late fees, balance transfers, card repayments/payments to the card itself.
+Credit card: purchases = expense, refunds/cashbacks = income.
+
+Return only the JSON array.` }
+      ]
+    }]
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+  const list = JSON.parse(cleaned);
+  if (!Array.isArray(list)) throw new Error("AI returned non-array");
+
+  return list.map(tx => ({
+    date:        String(tx.date || "").trim(),
+    description: String(tx.description || "").trim(),
+    amount:      Math.abs(Number(tx.amount)),
+    type:        tx.type === "income" ? "income" : "expense",
+    category:    VALID_CATEGORIES.includes(tx.category) ? tx.category : "other",
+  })).filter(tx => tx.description && tx.amount > 0 && tx.amount < 1_000_000_000 && /^\d{4}-\d{2}-\d{2}$/.test(tx.date));
+}
 
 async function extractPdfText(buffer) {
   const { PDFParse } = pdfParse;
@@ -1003,20 +1067,36 @@ function parseZiraatStatement(text) {
 }
 
 app.post("/transactions/import", authMiddleware, upload.single("statement"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "PDF file required" });
+  if (!req.file) return res.status(400).json({ error: "File required (PDF, JPG, PNG, or WEBP)" });
 
-  let text;
-  try {
-    text = await extractPdfText(req.file.buffer);
-  } catch {
-    return res.status(422).json({
-      error: "Could not read PDF. Make sure the file is a valid, text-based PDF.",
-    });
+  let parsed = [];
+  const mime = req.file.mimetype;
+
+  // AI path — used when ANTHROPIC_API_KEY is set (supports any bank, any file type)
+  if (anthropic) {
+    try {
+      parsed = await parseWithAI(req.file.buffer, mime);
+    } catch (err) {
+      console.error("AI parse failed:", err.message);
+      // Fall through to regex fallback for PDFs
+    }
   }
 
-  const parsed = detectBankAndParse(text);
+  // Regex fallback — PDF only, Ziraat / Yapı Kredi / generic
+  if (parsed.length === 0 && mime === "application/pdf") {
+    try {
+      const text = await extractPdfText(req.file.buffer);
+      parsed = detectBankAndParse(text);
+    } catch {
+      // ignore
+    }
+  }
+
   if (parsed.length === 0) {
-    return res.status(422).json({ error: "No transactions found. Please upload a Ziraat Bank or Yapı Kredi credit card statement." });
+    const hint = anthropic
+      ? "No transactions found. Make sure the file is a clear bank or credit card statement."
+      : "No transactions found. Add ANTHROPIC_API_KEY for AI-powered import, or upload a Ziraat / Yapı Kredi PDF.";
+    return res.status(422).json({ error: hint });
   }
 
   if (req.query.preview === "true") {

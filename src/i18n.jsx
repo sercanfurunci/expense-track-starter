@@ -140,9 +140,9 @@ const translations = {
 
     // Statement import
     importStatement: "Import Statement",
-    importStatementDesc: "Upload a Ziraat Bank or Yapı Kredi credit card statement (PDF) to automatically import all transactions.",
-    importChooseFile: "Choose PDF file",
-    importParsing: "Reading PDF…",
+    importStatementDesc: "Upload any bank statement or a photo of your statement — AI will automatically extract all transactions.",
+    importChooseFile: "Choose file",
+    importParsing: "Analyzing with AI…",
     importPreviewDesc: ({ count }) => `Found ${count} transactions. Review and confirm to import.`,
     importConfirm: ({ count }) => `Import ${count} transactions`,
     importImporting: "Importing…",
@@ -323,9 +323,9 @@ const translations = {
 
     // Statement import
     importStatement: "Ekstre İçe Aktar",
-    importStatementDesc: "Ziraat Bankası kredi kartı ekstrenizi (PDF) yükleyin, işlemler otomatik eklensin.",
-    importChooseFile: "PDF dosyası seç",
-    importParsing: "PDF okunuyor…",
+    importStatementDesc: "Herhangi bir banka ekstresini veya fotoğrafını yükleyin — yapay zeka işlemleri otomatik çıkarsın.",
+    importChooseFile: "Dosya seç",
+    importParsing: "Yapay zeka analiz ediyor…",
     importPreviewDesc: ({ count }) => `${count} işlem bulundu. İnceleyip onaylayın.`,
     importConfirm: ({ count }) => `${count} işlemi içe aktar`,
     importImporting: "Aktarılıyor…",
