@@ -477,6 +477,7 @@ export default function Subscriptions() {
     .filter(g => g.items.length > 0);
 
   return (
+    <>
     <div className="anim-1">
       {/* Monthly total card */}
       <div className="fin-card p-5 mb-5 anim-1">
@@ -557,42 +558,44 @@ export default function Subscriptions() {
         </div>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={() => { setEditTarget(null); setShowForm(true); }}
-        className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer z-30"
-        style={{ backgroundColor: "var(--text-1)", color: "var(--bg)" }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
-
-      {showForm && (
-        <SubForm
-          initial={editTarget}
-          onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditTarget(null); }}
-        />
-      )}
-
-      {detailTarget && (
-        <SubDetail
-          sub={detailTarget}
-          onEdit={() => openEdit(detailTarget)}
-          onDelete={() => setDeleteTarget(detailTarget)}
-          onClose={() => setDetailTarget(null)}
-        />
-      )}
-
-      {deleteTarget && (
-        <DeleteConfirm
-          sub={deleteTarget}
-          onConfirm={() => handleDelete(deleteTarget.id)}
-          onCancel={() => setDeleteTarget(null)}
-        />
-      )}
     </div>
+
+    {/* FAB — outside anim-1 so CSS transform doesn't break fixed positioning */}
+    <button
+      onClick={() => { setEditTarget(null); setShowForm(true); }}
+      className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer z-30"
+      style={{ backgroundColor: "var(--text-1)", color: "var(--bg)" }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    </button>
+
+    {showForm && (
+      <SubForm
+        initial={editTarget}
+        onSave={handleSave}
+        onClose={() => { setShowForm(false); setEditTarget(null); }}
+      />
+    )}
+
+    {detailTarget && (
+      <SubDetail
+        sub={detailTarget}
+        onEdit={() => openEdit(detailTarget)}
+        onDelete={() => setDeleteTarget(detailTarget)}
+        onClose={() => setDetailTarget(null)}
+      />
+    )}
+
+    {deleteTarget && (
+      <DeleteConfirm
+        sub={deleteTarget}
+        onConfirm={() => handleDelete(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    )}
+    </>
   );
 }
