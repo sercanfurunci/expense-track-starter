@@ -150,6 +150,23 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+pool.query(`
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id               SERIAL PRIMARY KEY,
+    user_id          INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    name             TEXT NOT NULL,
+    amount           NUMERIC NOT NULL,
+    currency         TEXT NOT NULL DEFAULT 'USD',
+    billing_cycle    TEXT NOT NULL DEFAULT 'monthly',
+    next_billing_date DATE NOT NULL,
+    category         TEXT NOT NULL DEFAULT 'other',
+    is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+    started_at       DATE NOT NULL,
+    notes            TEXT,
+    created_at       TIMESTAMP DEFAULT NOW()
+  )
+`).catch(err => console.error("subscriptions table init error:", err));
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
@@ -161,9 +178,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\+[1-9]\d{6,14}$/;
 const HEX64_RE = /^[0-9a-f]{64}$/;
 
-const VALID_TYPES      = new Set(["income", "expense"]);
-const VALID_CATEGORIES = new Set(["food", "housing", "utilities", "transport", "entertainment", "salary", "other"]);
-const VALID_CURRENCIES = new Set(["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "CHF"]);
+const VALID_TYPES            = new Set(["income", "expense"]);
+const VALID_CATEGORIES       = new Set(["food", "housing", "utilities", "transport", "entertainment", "salary", "other"]);
+const VALID_CURRENCIES       = new Set(["USD", "EUR", "GBP", "TRY", "JPY", "CAD", "AUD", "CHF"]);
+const VALID_BILLING_CYCLES   = new Set(["weekly", "monthly", "yearly"]);
+const VALID_SUB_CATEGORIES   = new Set(["ai", "entertainment", "music", "finance", "productivity", "health", "news", "other"]);
 
 function trimStr(val, maxLen) {
   if (typeof val !== "string") return null;
@@ -795,6 +814,110 @@ app.delete("/transactions/:id", authMiddleware, async (req, res) => {
       [id, req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "Transaction not found" });
+    res.json({ message: "Deleted successfully", deleted: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Delete error" });
+  }
+});
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+app.get("/subscriptions", authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM subscriptions WHERE user_id=$1 ORDER BY next_billing_date ASC",
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Fetch error" });
+  }
+});
+
+app.post("/subscriptions", authMiddleware, async (req, res) => {
+  const name             = trimStr(req.body.name, 100);
+  const amount           = isValidAmount(req.body.amount);
+  const currency         = trimStr(req.body.currency, 10);
+  const billing_cycle    = trimStr(req.body.billing_cycle, 20);
+  const next_billing_date = isValidDate(req.body.next_billing_date);
+  const category         = trimStr(req.body.category, 50);
+  const started_at       = isValidDate(req.body.started_at);
+  const notes            = trimStr(req.body.notes, 500) ?? null;
+
+  if (!name)                                    return res.status(400).json({ error: "Name required" });
+  if (amount === null)                          return res.status(400).json({ error: "Invalid amount" });
+  if (!currency || !VALID_CURRENCIES.has(currency)) return res.status(400).json({ error: "Invalid currency" });
+  if (!billing_cycle || !VALID_BILLING_CYCLES.has(billing_cycle)) return res.status(400).json({ error: "Invalid billing cycle" });
+  if (!next_billing_date)                       return res.status(400).json({ error: "Invalid next billing date" });
+  if (!category || !VALID_SUB_CATEGORIES.has(category)) return res.status(400).json({ error: "Invalid category" });
+  if (!started_at)                              return res.status(400).json({ error: "Invalid start date" });
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO subscriptions (user_id, name, amount, currency, billing_cycle, next_billing_date, category, started_at, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [req.user.id, name, amount, currency, billing_cycle, next_billing_date, category, started_at, notes]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Insert error" });
+  }
+});
+
+app.put("/subscriptions/:id", authMiddleware, async (req, res) => {
+  const id = isValidId(req.params.id);
+  if (!id) return res.status(400).json({ error: "Invalid subscription ID" });
+
+  const name             = trimStr(req.body.name, 100);
+  const amount           = isValidAmount(req.body.amount);
+  const currency         = trimStr(req.body.currency, 10);
+  const billing_cycle    = trimStr(req.body.billing_cycle, 20);
+  const next_billing_date = isValidDate(req.body.next_billing_date);
+  const category         = trimStr(req.body.category, 50);
+  const started_at       = isValidDate(req.body.started_at);
+  const notes            = req.body.notes !== undefined ? (trimStr(req.body.notes, 500) ?? null) : undefined;
+  const is_active        = typeof req.body.is_active === "boolean" ? req.body.is_active : null;
+
+  if (!name)                                    return res.status(400).json({ error: "Name required" });
+  if (amount === null)                          return res.status(400).json({ error: "Invalid amount" });
+  if (!currency || !VALID_CURRENCIES.has(currency)) return res.status(400).json({ error: "Invalid currency" });
+  if (!billing_cycle || !VALID_BILLING_CYCLES.has(billing_cycle)) return res.status(400).json({ error: "Invalid billing cycle" });
+  if (!next_billing_date)                       return res.status(400).json({ error: "Invalid next billing date" });
+  if (!category || !VALID_SUB_CATEGORIES.has(category)) return res.status(400).json({ error: "Invalid category" });
+  if (!started_at)                              return res.status(400).json({ error: "Invalid start date" });
+
+  try {
+    const result = await pool.query(
+      `UPDATE subscriptions
+       SET name=$1, amount=$2, currency=$3, billing_cycle=$4, next_billing_date=$5,
+           category=$6, started_at=$7, notes=$8, is_active=$9
+       WHERE id=$10 AND user_id=$11 RETURNING *`,
+      [name, amount, currency, billing_cycle, next_billing_date, category, started_at,
+       notes !== undefined ? notes : null,
+       is_active !== null ? is_active : true,
+       id, req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "Subscription not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Update error" });
+  }
+});
+
+app.delete("/subscriptions/:id", authMiddleware, async (req, res) => {
+  const id = isValidId(req.params.id);
+  if (!id) return res.status(400).json({ error: "Invalid subscription ID" });
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM subscriptions WHERE id=$1 AND user_id=$2 RETURNING *",
+      [id, req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "Subscription not found" });
     res.json({ message: "Deleted successfully", deleted: result.rows[0] });
   } catch (err) {
     console.error(err);

@@ -12,6 +12,7 @@ import ProfileModal from "./ProfileModal";
 import LandingPage from "./LandingPage";
 import { CurrencyProvider } from "./currency.jsx";
 import { useLang } from "./i18n.jsx";
+import Subscriptions from "./Subscriptions";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -45,11 +46,23 @@ function IconAnalytics({ active }) {
     </svg>
   );
 }
+function IconSubscriptions({ active }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={active ? "2.2" : "1.8"} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 1l4 4-4 4" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="M7 23l-4-4 4-4" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
 
 const TABS = [
-  { id: "dashboard",    label: "Overview",     Icon: IconDashboard },
-  { id: "transactions", label: "Transactions", Icon: IconTransactions },
-  { id: "analytics",   label: "Analytics",    Icon: IconAnalytics },
+  { id: "dashboard",     label: "Overview",       Icon: IconDashboard },
+  { id: "transactions",  label: "Transactions",   Icon: IconTransactions },
+  { id: "analytics",    label: "Analytics",      Icon: IconAnalytics },
+  { id: "subscriptions", label: "Subscriptions",  Icon: IconSubscriptions },
 ];
 
 function authFetch(url, opts = {}) {
@@ -337,6 +350,8 @@ function App() {
         )}
 
         {activeTab === "analytics" && <Analytics transactions={transactions} />}
+
+        {activeTab === "subscriptions" && <Subscriptions />}
       </div>
 
       {showProfile && (
