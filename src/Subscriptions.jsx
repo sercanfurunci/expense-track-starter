@@ -105,11 +105,11 @@ function DeleteConfirm({ sub, onConfirm, onCancel }) {
   const { t } = useLang();
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
       onClick={e => e.target === e.currentTarget && onCancel()}
     >
-      <div className="w-full max-w-sm rounded-2xl p-5" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}>
+      <div className="w-full max-w-sm p-5" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10 }}>
         <h3 className="font-semibold mb-2" style={{ color: "var(--text-1)" }}>{t("subDeleteTitle")}</h3>
         <p className="text-sm mb-5" style={{ color: "var(--text-2)" }}>
           {t("deleteConfirmLine1")} <strong>{sub.name}</strong>?
@@ -117,15 +117,15 @@ function DeleteConfirm({ sub, onConfirm, onCancel }) {
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all"
-            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)" }}
+            className="flex-1 py-2.5 text-sm font-medium cursor-pointer transition-all"
+            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)", borderRadius: 7 }}
           >
             {t("cancelBtn")}
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-            style={{ backgroundColor: "var(--red)", color: "white" }}
+            className="flex-1 py-2.5 text-sm font-medium cursor-pointer"
+            style={{ backgroundColor: "var(--red)", color: "white", borderRadius: 7 }}
           >
             {t("deleteBtn")}
           </button>
@@ -166,12 +166,12 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}>
+      <div className="w-full max-w-md overflow-hidden" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10 }}>
         {/* Header */}
         <div className="flex items-center gap-3 p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ backgroundColor: "var(--surface-2)" }}
+            className="w-12 h-12 flex items-center justify-center text-2xl shrink-0"
+            style={{ backgroundColor: "var(--surface-2)", borderRadius: 10 }}
           >
             {getEmoji(sub.name, sub.category)}
           </div>
@@ -179,7 +179,7 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
             <p className="font-semibold text-base truncate" style={{ color: "var(--text-1)" }}>{sub.name}</p>
             <p className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
               <span
-                className="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0"
+                className="w-1.5 h-1.5 rounded-full inline-block shrink-0"
                 style={{ backgroundColor: sub.is_active ? "var(--green)" : "var(--text-3)" }}
               />
               {sub.is_active ? t("subStatusActive") : t("subStatusInactive")} · {subCurrency.symbol}{parseFloat(sub.amount).toLocaleString(dateLocale)}
@@ -193,7 +193,7 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-px m-5 mb-0 rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+        <div className="grid grid-cols-2 gap-px m-5 mb-0 overflow-hidden" style={{ border: "1px solid var(--border)", borderRadius: 10 }}>
           {stats.map(([label, value]) => (
             <div key={label} className="p-3" style={{ backgroundColor: "var(--surface-2)" }}>
               <p className="fin-label text-[10px] mb-1" style={{ color: "var(--text-3)" }}>{label}</p>
@@ -206,15 +206,15 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
         <div className="flex gap-2 p-5">
           <button
             onClick={onEdit}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all"
-            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)" }}
+            className="flex-1 py-2.5 text-sm font-medium cursor-pointer transition-all"
+            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)", borderRadius: 7 }}
           >
             {t("subEdit")}
           </button>
           <button
             onClick={onDelete}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-            style={{ backgroundColor: "rgba(220,38,38,0.08)", color: "var(--red)", border: "1px solid rgba(220,38,38,0.15)" }}
+            className="flex-1 py-2.5 text-sm font-medium cursor-pointer"
+            style={{ backgroundColor: "rgba(220,38,38,0.08)", color: "var(--red)", border: "1px solid rgba(220,38,38,0.15)", borderRadius: 7 }}
           >
             {t("deleteBtn")}
           </button>
@@ -266,8 +266,8 @@ function SubForm({ initial, onSave, onClose }) {
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
+        className="w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
+        style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10 }}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-semibold text-base" style={{ color: "var(--text-1)" }}>
@@ -281,7 +281,6 @@ function SubForm({ initial, onSave, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Name */}
           <div>
             <label className="fin-label mb-1 block">{t("subName")}</label>
             <input
@@ -294,7 +293,6 @@ function SubForm({ initial, onSave, onClose }) {
             />
           </div>
 
-          {/* Amount + Currency */}
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="fin-label mb-1 block">{t("amount")}</label>
@@ -317,7 +315,6 @@ function SubForm({ initial, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Billing cycle */}
           <div>
             <label className="fin-label mb-1 block">{t("subBillingCycle")}</label>
             <select className="fin-select w-full" value={form.billing_cycle} onChange={e => set("billing_cycle", e.target.value)}>
@@ -327,7 +324,6 @@ function SubForm({ initial, onSave, onClose }) {
             </select>
           </div>
 
-          {/* Category */}
           <div>
             <label className="fin-label mb-1 block">{t("category")}</label>
             <select className="fin-select w-full" value={form.category} onChange={e => set("category", e.target.value)}>
@@ -337,7 +333,6 @@ function SubForm({ initial, onSave, onClose }) {
             </select>
           </div>
 
-          {/* Started at + Next billing */}
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="fin-label mb-1 block">{t("subStartedAt")}</label>
@@ -361,7 +356,6 @@ function SubForm({ initial, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Notes */}
           <div>
             <label className="fin-label mb-1 block">{t("subNotes")}</label>
             <input
@@ -373,21 +367,21 @@ function SubForm({ initial, onSave, onClose }) {
             />
           </div>
 
-          {/* Active toggle (edit only) */}
           {initial && (
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <div
                 onClick={() => set("is_active", !form.is_active)}
-                className="w-10 h-5.5 rounded-full relative transition-colors flex-shrink-0"
+                className="relative transition-colors shrink-0"
                 style={{
                   backgroundColor: form.is_active ? "var(--brand)" : "var(--border-2)",
                   cursor: "pointer",
-                  minWidth: "2.5rem",
+                  width: "2.5rem",
                   height: "1.375rem",
+                  borderRadius: 99,
                 }}
               >
                 <span
-                  className="absolute top-0.5 w-4 h-4 rounded-full transition-transform"
+                  className="absolute top-0.5 w-4 h-4 rounded-full transition-all"
                   style={{
                     left: form.is_active ? "calc(100% - 1.125rem)" : "0.125rem",
                     backgroundColor: "white",
@@ -418,6 +412,7 @@ export default function Subscriptions() {
 
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [detailTarget, setDetailTarget] = useState(null);
@@ -472,15 +467,20 @@ export default function Subscriptions() {
     0
   );
 
-  const groups = CATEGORIES
-    .map(cat => ({ cat, items: subs.filter(s => s.category === cat) }))
+  // Categories that actually have subscriptions
+  const usedCategories = CATEGORIES.filter(cat => subs.some(s => s.category === cat));
+
+  // Filtered + grouped list
+  const filteredSubs = activeFilter === "all" ? subs : subs.filter(s => s.category === activeFilter);
+  const groups = (activeFilter === "all" ? usedCategories : [activeFilter])
+    .map(cat => ({ cat, items: filteredSubs.filter(s => s.category === cat) }))
     .filter(g => g.items.length > 0);
 
   return (
     <>
     <div className="anim-1">
       {/* Monthly total card */}
-      <div className="fin-card p-5 mb-5 anim-1">
+      <div className="fin-card p-5 mb-4">
         <p className="fin-label mb-1" style={{ color: "var(--text-3)" }}>
           {t("subMonthlyTotal")}
         </p>
@@ -494,6 +494,39 @@ export default function Subscriptions() {
           </p>
         </div>
       </div>
+
+      {/* Category filter pills */}
+      {usedCategories.length > 1 && (
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          <button
+            onClick={() => setActiveFilter("all")}
+            className="shrink-0 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all"
+            style={{
+              borderRadius: 7,
+              backgroundColor: activeFilter === "all" ? "var(--text-1)" : "var(--surface)",
+              color: activeFilter === "all" ? "var(--bg)" : "var(--text-2)",
+              border: `1px solid ${activeFilter === "all" ? "var(--text-1)" : "var(--border)"}`,
+            }}
+          >
+            {t("allCategories")}
+          </button>
+          {usedCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveFilter(cat)}
+              className="shrink-0 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all"
+              style={{
+                borderRadius: 7,
+                backgroundColor: activeFilter === cat ? "var(--text-1)" : "var(--surface)",
+                color: activeFilter === cat ? "var(--bg)" : "var(--text-2)",
+                border: `1px solid ${activeFilter === cat ? "var(--text-1)" : "var(--border)"}`,
+              }}
+            >
+              {CATEGORY_EMOJI[cat]} {t(`subCat_${cat}`)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Subscription list */}
       {loading ? (
@@ -533,8 +566,8 @@ export default function Subscriptions() {
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ backgroundColor: "var(--surface-2)" }}
+                        className="w-10 h-10 flex items-center justify-center text-xl shrink-0"
+                        style={{ backgroundColor: "var(--surface-2)", borderRadius: 10 }}
                       >
                         {getEmoji(sub.name, sub.category)}
                       </div>
@@ -546,7 +579,7 @@ export default function Subscriptions() {
                           {t(`subCycle_${sub.billing_cycle}`)} · {daysLabel}
                         </p>
                       </div>
-                      <p className="fin-mono text-sm font-semibold flex-shrink-0" style={{ color: "var(--text-1)" }}>
+                      <p className="fin-mono text-sm font-semibold shrink-0" style={{ color: "var(--text-1)" }}>
                         {subCurr.symbol}{parseFloat(sub.amount).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </button>
@@ -557,7 +590,6 @@ export default function Subscriptions() {
           ))}
         </div>
       )}
-
     </div>
 
     {/* FAB — outside anim-1 so CSS transform doesn't break fixed positioning */}
