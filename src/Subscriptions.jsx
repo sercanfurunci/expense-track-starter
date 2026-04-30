@@ -171,7 +171,7 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
         <div className="flex items-center gap-3 p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div
             className="w-12 h-12 flex items-center justify-center text-2xl shrink-0"
-            style={{ backgroundColor: "var(--surface-2)", borderRadius: 10 }}
+            style={{ backgroundColor: "var(--surface-2)", borderRadius: 6 }}
           >
             {getEmoji(sub.name, sub.category)}
           </div>
@@ -567,7 +567,7 @@ export default function Subscriptions() {
                     >
                       <div
                         className="w-10 h-10 flex items-center justify-center text-xl shrink-0"
-                        style={{ backgroundColor: "var(--surface-2)", borderRadius: 10 }}
+                        style={{ backgroundColor: "var(--surface-2)", borderRadius: 6 }}
                       >
                         {getEmoji(sub.name, sub.category)}
                       </div>
