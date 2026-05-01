@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useLang } from "./i18n.jsx";
 import { useCurrency } from "./currency.jsx";
 
@@ -27,7 +28,7 @@ function CategoryPill({ cat, label }) {
 }
 
 function DeleteModal({ transaction, onConfirm, onCancel }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
       <div className="fin-card relative rounded-2xl shadow-2xl w-full max-w-sm p-6 anim-1">
@@ -62,7 +63,8 @@ function DeleteModal({ transaction, onConfirm, onCancel }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -394,8 +396,8 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                             {tx.type === "income" ? "+" : "−"}{symbol}{fmt(tx.amount)}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <td className="px-4 py-4" style={{ whiteSpace: "nowrap" }}>
+                          <div className="flex items-center gap-1 justify-end">
                             <button
                               onClick={() => startEdit(tx)}
                               className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors"

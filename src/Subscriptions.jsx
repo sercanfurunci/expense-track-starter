@@ -478,7 +478,7 @@ export default function Subscriptions() {
 
   return (
     <>
-    <div className="anim-1">
+    <div>
       {/* Monthly total card */}
       <div className="fin-card p-5 mb-4">
         <p className="fin-label mb-1" style={{ color: "var(--text-3)" }}>
@@ -543,7 +543,7 @@ export default function Subscriptions() {
               <p className="fin-label mb-2 px-1" style={{ color: "var(--text-3)" }}>
                 {CATEGORY_EMOJI[cat]} {t(`subCat_${cat}`)} · {items.length}
               </p>
-              <div className="fin-card overflow-hidden">
+              <div className="fin-card overflow-hidden rounded-xl">
                 {items.map((sub, i) => {
                   const days = daysUntil(sub.next_billing_date);
                   const subCurr = CURRENCIES.find(c => c.code === sub.currency) || CURRENCIES[0];
