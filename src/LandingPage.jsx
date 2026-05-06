@@ -205,22 +205,34 @@ function LandingPage({ onGetStarted, onSignIn, isDark, toggleDark }) {
             {t("landingFeaturesTitle")}<br />{t("landingFeaturesTitle2")}
           </h2>
 
-          <div className="space-y-10">
+          <div className="grid sm:grid-cols-2 gap-8">
             {[
-              { n: "1", title: t("landingFeature1Title"), desc: t("landingFeature1Desc") },
-              { n: "2", title: t("landingFeature2Title"), desc: t("landingFeature2Desc") },
-              { n: "3", title: t("landingFeature3Title"), desc: t("landingFeature3Desc") },
-            ].map(({ n, title, desc }) => (
-              <div key={n} className="flex gap-6 items-start">
-                <span className="fin-mono font-bold shrink-0" style={{
-                  color: "var(--brand)", fontSize: "0.9rem", lineHeight: 1,
-                  marginTop: 3,
+              { n: "1", title: t("landingFeature1Title"), desc: t("landingFeature1Desc"), icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              )},
+              { n: "2", title: t("landingFeature2Title"), desc: t("landingFeature2Desc"), icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              )},
+              { n: "3", title: t("landingFeature3Title"), desc: t("landingFeature3Desc"), icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20A14.5 14.5 0 0 0 12 2"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+              )},
+              { n: "4", title: t("landingFeature4Title"), desc: t("landingFeature4Desc"), icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M20 2v6h-6"/><path d="M14 10l6-8"/></svg>
+              )},
+              { n: "5", title: t("landingFeature5Title"), desc: t("landingFeature5Desc"), icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              )},
+            ].map(({ n, title, desc, icon }) => (
+              <div key={n} className="flex gap-4 items-start">
+                <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{
+                  backgroundColor: "var(--brand-dim)",
+                  color: "var(--brand)",
                 }}>
-                  {n}.
-                </span>
+                  {icon}
+                </div>
                 <div>
                   <p className="font-semibold mb-1.5" style={{ color: "var(--text-1)", fontSize: "0.95rem" }}>{title}</p>
-                  <p style={{ color: "var(--text-2)", fontSize: "0.9rem", lineHeight: 1.6 }}>{desc}</p>
+                  <p style={{ color: "var(--text-2)", fontSize: "0.875rem", lineHeight: 1.6 }}>{desc}</p>
                 </div>
               </div>
             ))}
