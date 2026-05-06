@@ -19,14 +19,14 @@ export default function StatementImportModal({ onClose, onImported }) {
   const [preview, setPreview] = useState([]);
   const [importedCount, setImportedCount] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const CATEGORIES = ["food","housing","utilities","transport","entertainment","salary","other"];
 
   function deleteTx(i) {
     setPreview(prev => prev.filter((_, idx) => idx !== i));
   }
 
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
+  async function processFile(file) {
     if (!file) return;
     setSelectedFile(file);
     setError(null);
@@ -50,6 +50,27 @@ export default function StatementImportModal({ onClose, onImported }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleFileInput(e) {
+    processFile(e.target.files?.[0]);
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    if (!loading) setIsDragging(true);
+  }
+
+  function handleDragLeave(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setIsDragging(false);
+    if (loading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   }
 
   async function handleConfirm() {
@@ -149,7 +170,7 @@ export default function StatementImportModal({ onClose, onImported }) {
               <input
                 type="file"
                 accept="application/pdf,image/jpeg,image/png,image/webp"
-                onChange={handleFile}
+                onChange={handleFileInput}
                 className="hidden"
                 id="statement-file"
               />
@@ -157,6 +178,9 @@ export default function StatementImportModal({ onClose, onImported }) {
               {/* Drop zone / upload button */}
               <label
                 htmlFor="statement-file"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -164,21 +188,23 @@ export default function StatementImportModal({ onClose, onImported }) {
                   gap: 10,
                   padding: "28px 20px",
                   borderRadius: 12,
-                  border: "1.5px dashed var(--border-2)",
-                  background: "var(--surface-2)",
+                  border: isDragging ? "1.5px dashed var(--brand)" : "1.5px dashed var(--border-2)",
+                  background: isDragging ? "var(--brand-dim)" : "var(--surface-2)",
                   cursor: loading ? "not-allowed" : "pointer",
                   transition: "border-color 0.15s, background 0.15s",
                   opacity: loading ? 0.7 : 1,
                 }}
                 onMouseEnter={e => {
-                  if (!loading) {
+                  if (!loading && !isDragging) {
                     e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "var(--brand-dim)";
                   }
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = "var(--border-2)";
-                  e.currentTarget.style.background = "var(--surface-2)";
+                  if (!isDragging) {
+                    e.currentTarget.style.borderColor = "var(--border-2)";
+                    e.currentTarget.style.background = "var(--surface-2)";
+                  }
                 }}
               >
                 {loading ? (
@@ -204,9 +230,11 @@ export default function StatementImportModal({ onClose, onImported }) {
                     </div>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>
-                        {t("importChooseFile")}
+                        {isDragging ? "Bırakın…" : t("importChooseFile")}
                       </div>
-                      <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>PDF, JPG, PNG, WEBP</div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>
+                        {isDragging ? "" : "Sürükleyip bırakın veya tıklayın · PDF, JPG, PNG, WEBP"}
+                      </div>
                     </div>
                   </>
                 )}
