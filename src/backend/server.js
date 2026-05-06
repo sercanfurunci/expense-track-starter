@@ -970,6 +970,12 @@ CRITICAL — number format: Turkish/European receipts use . as thousands separat
 Examples: 18.410,00 = 18410.00 | 1.250,50 = 1250.50 | 99,90 = 99.90
 Always output amount as a plain decimal number (e.g. 18410, not 18.41).
 
+CRITICAL — Turkish installment payments (taksit): Lines may look like:
+  "MERCHANT 2.198,00 TL İşlemin 2/3 Taksidi 732,66"
+  The large number before "TL" is the TOTAL original price — do NOT use it.
+  The number after "Taksidi" (e.g. 732,66) is the actual installment amount charged — USE THIS as the amount.
+  Similarly "01.Tak", "02.Tak", "03.Tak" in the description means it is an installment transaction.
+
 Category rules:
   food          → restaurants, cafes, supermarkets, food delivery
   housing       → rent, mortgage
