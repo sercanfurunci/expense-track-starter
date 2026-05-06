@@ -69,6 +69,22 @@ CREATE TABLE transactions (
   date TIMESTAMP DEFAULT NOW(),
   user_id INTEGER REFERENCES users(id)
 );
+
+-- Subscriptions
+CREATE TABLE subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  name TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  currency TEXT DEFAULT 'USD',
+  billing_cycle TEXT NOT NULL,   -- 'weekly' | 'monthly' | 'yearly'
+  next_billing_date DATE NOT NULL,
+  category TEXT DEFAULT 'other', -- 'ai' | 'entertainment' | 'music' | 'finance' | 'productivity' | 'health' | 'news' | 'other'
+  started_at DATE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
 If adding new columns: `ALTER TABLE users ADD COLUMN IF NOT EXISTS ...`
@@ -89,6 +105,11 @@ App                     # auth state, transactions state, theme, token, currentU
     ├── TransactionForm     # add income/expense form (pill type toggle)
     ├── TransactionList     # filterable list, inline edit, delete modal
     ├── Analytics           # 30-day bar chart + stat cards + category breakdown
+    ├── Subscriptions       # subscription tracker: list, add/edit/delete, monthly total, brand icons
+    │   ├── SubForm         # add/edit modal
+    │   ├── SubDetail       # detail/stats modal
+    │   └── DeleteConfirm   # delete confirmation modal
+    ├── StatementImportModal # AI-powered bank statement import (PDF/image, drag-and-drop)
     └── ProfileModal        # edit display name + currency picker (8 currencies)
 ```
 
@@ -130,4 +151,23 @@ Tailwind CSS v4 + custom classes in `src/App.css`:
 | POST | `/transactions` | JWT | Create transaction |
 | PUT | `/transactions/:id` | JWT | Update transaction |
 | DELETE | `/transactions/:id` | JWT | Delete transaction |
+| POST | `/transactions/import` | JWT | AI statement import — upload PDF/image (multipart), returns `{ transactions }` with `?preview=true` |
+| POST | `/transactions/import/bulk` | JWT | Save previewed transactions in bulk |
+| GET | `/subscriptions` | JWT | List user's subscriptions |
+| POST | `/subscriptions` | JWT | Create subscription |
+| PUT | `/subscriptions/:id` | JWT | Update subscription |
+| DELETE | `/subscriptions/:id` | JWT | Delete subscription |
 | GET | `/admin/users` | x-admin-secret | List all users |
+
+### AI Statement Import
+
+`parseWithAI()` in `server.js` uses `claude-haiku-4-5` via `ANTHROPIC_API_KEY`. Falls back to regex-based `parseGenericStatement()` / `parseZiraatStatement()` / `parseYapiKrediStatement()` if AI unavailable.
+
+**Turkish installment (taksit) rule:** Lines like `"MERCHANT 2.198,00 TL İşlemin 2/3 Taksidi 732,66"` — the number after `Taksidi` is the actual charge (732,66), not the larger total (2.198,00).
+
+### Subscriptions
+
+- Brand icons via Google Favicon API: `https://www.google.com/s2/favicons?domain={domain}&sz=64`
+- `SERVICE_DOMAIN` map in `Subscriptions.jsx` matches service names to domains; longest match wins
+- Falls back to emoji if domain unknown or image fails to load
+- Monthly total normalises weekly/yearly amounts: weekly × 52 / 12, yearly / 12
