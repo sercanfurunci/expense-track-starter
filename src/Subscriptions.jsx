@@ -10,7 +10,7 @@ async function getRate(from, to) {
   const cached = _rateCache[key];
   if (cached && Date.now() - cached.ts < 3_600_000) return cached.rate;
   try {
-    const res = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    const res = await fetch(`https://api.frankfurter.dev/v1/latest?from=${from}&to=${to}`);
     const data = await res.json();
     const rate = data.rates?.[to];
     if (rate) _rateCache[key] = { rate, ts: Date.now() };
