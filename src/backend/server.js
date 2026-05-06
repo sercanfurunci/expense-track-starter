@@ -985,8 +985,13 @@ Category rules:
   salary        → salary, wages, payroll
   other         → everything else
 
-Skip: interest/late fees, balance transfers, card repayments/payments to the card itself.
-Credit card: purchases = expense, refunds/cashbacks = income.
+Skip these entirely — do NOT include them in the output:
+- Interest/late fees, balance transfers
+- Card repayments / payments made TO the credit card
+- Turkish: "hesaptan ödeme", "otomatik ödeme", "şube-hesaptan ödeme", "kredi kartı ödemesi", "hesap özeti ödemesi", "ekstreden transfer"
+- Any line where money is being paid TO settle the card balance (not a purchase)
+
+Credit card purchases = expense. Refunds/cashbacks = income. Payments to the card itself = SKIP.
 
 Return only the JSON array.` }
       ]
