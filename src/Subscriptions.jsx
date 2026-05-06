@@ -248,7 +248,7 @@ function DeleteConfirm({ sub, onConfirm, onCancel }) {
 }
 
 // ── Subscription detail modal ─────────────────────────────────────────────────
-function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency }) {
+function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency, preloadedRate }) {
   const { t, lang } = useLang();
   const subCurrency = CURRENCIES.find(c => c.code === sub.currency) || CURRENCIES[0];
   const userCurrencyObj = CURRENCIES.find(c => c.code === userCurrency) || subCurrency;
@@ -256,14 +256,16 @@ function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency 
   const months = monthsActive(sub.started_at);
   const totalSpent = parseFloat(sub.amount) * months;
   const dateLocale = lang === "tr" ? "tr-TR" : "en-US";
-  const [rate, setRate] = useState(null);
+  const [rate, setRate] = useState(preloadedRate);
   const [addingExpense, setAddingExpense] = useState(false);
   const [expenseAdded, setExpenseAdded] = useState(false);
   const needsConversion = sub.currency !== userCurrency;
 
   useEffect(() => {
-    if (needsConversion) getRate(sub.currency, userCurrency).then(setRate);
-  }, [sub.currency, userCurrency, needsConversion]);
+    if (needsConversion && !preloadedRate) {
+      getRate(sub.currency, userCurrency).then(setRate);
+    }
+  }, [sub.currency, userCurrency, needsConversion, preloadedRate]);
 
   async function handleAddExpense() {
     setAddingExpense(true);
@@ -336,9 +338,9 @@ function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency 
         <div className="flex flex-col gap-2 p-5 pt-4">
           <button
             onClick={handleAddExpense}
-            disabled={addingExpense || expenseAdded}
+            disabled={addingExpense || expenseAdded || (needsConversion && rate === null)}
             className="w-full py-2.5 text-sm font-medium cursor-pointer fin-btn-primary"
-            style={{ opacity: addingExpense ? 0.7 : 1 }}
+            style={{ opacity: (addingExpense || (needsConversion && rate === null)) ? 0.6 : 1 }}
           >
             {expenseAdded ? `✓ ${t("subExpenseAdded")}` : addingExpense ? "…" : t("subAddAsExpense")}
             {needsConversion && rate && !expenseAdded && !addingExpense && (
@@ -605,8 +607,22 @@ export default function Subscriptions({ onExpenseAdded }) {
   const [editTarget, setEditTarget] = useState(null);
   const [detailTarget, setDetailTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [rates, setRates] = useState({});
 
   useEffect(() => { loadSubs(); }, []);
+
+  useEffect(() => {
+    if (!subs.length || !currency.code) return;
+    const pairs = [...new Set(
+      subs.filter(s => s.currency !== currency.code).map(s => `${s.currency}|${currency.code}`)
+    )];
+    pairs.forEach(pair => {
+      const [from, to] = pair.split("|");
+      getRate(from, to).then(r => {
+        if (r) setRates(prev => ({ ...prev, [pair]: r }));
+      });
+    });
+  }, [subs, currency.code]);
 
   async function loadSubs() {
     setLoading(true);
@@ -666,10 +682,11 @@ export default function Subscriptions({ onExpenseAdded }) {
 
   const dateLocale = lang === "tr" ? "tr-TR" : "en-US";
   const activeSubs = subs.filter(s => s.is_active);
-  const monthlyTotal = activeSubs.reduce(
-    (sum, s) => sum + monthlyEquivalent(parseFloat(s.amount), s.billing_cycle),
-    0
-  );
+  const monthlyTotal = activeSubs.reduce((sum, s) => {
+    const r = s.currency === currency.code ? 1 : (rates[`${s.currency}|${currency.code}`] ?? null);
+    if (r === null) return sum;
+    return sum + monthlyEquivalent(parseFloat(s.amount) * r, s.billing_cycle);
+  }, 0);
 
   // Categories that actually have subscriptions
   const usedCategories = CATEGORIES.filter(cat => subs.some(s => s.category === cat));
@@ -807,6 +824,7 @@ export default function Subscriptions({ onExpenseAdded }) {
         onClose={() => setDetailTarget(null)}
         onAddExpense={handleAddAsExpense}
         userCurrency={currency.code}
+        preloadedRate={rates[`${detailTarget.currency}|${currency.code}`] ?? null}
       />
     )}
 
