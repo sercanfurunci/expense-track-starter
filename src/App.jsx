@@ -351,7 +351,7 @@ function App() {
 
         {activeTab === "analytics" && <Analytics transactions={transactions} />}
 
-        {activeTab === "subscriptions" && <Subscriptions />}
+        {activeTab === "subscriptions" && <Subscriptions onExpenseAdded={refreshTransactions} />}
       </div>
 
       {showProfile && (

@@ -1,6 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLang } from "./i18n.jsx";
 import { useCurrency, CURRENCIES } from "./currency.jsx";
+
+// ── Exchange rate ─────────────────────────────────────────────────────────────
+const _rateCache = {};
+async function getRate(from, to) {
+  if (from === to) return 1;
+  const key = `${from}_${to}`;
+  const cached = _rateCache[key];
+  if (cached && Date.now() - cached.ts < 3_600_000) return cached.rate;
+  try {
+    const res = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+    const data = await res.json();
+    const rate = data.rates?.[to];
+    if (rate) _rateCache[key] = { rate, ts: Date.now() };
+    return rate || null;
+  } catch {
+    return null;
+  }
+}
+
+const SUB_TO_TX_CATEGORY = {
+  ai: "other", entertainment: "entertainment", music: "entertainment",
+  finance: "other", productivity: "other", health: "other",
+  news: "other", other: "other",
+};
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -224,13 +248,31 @@ function DeleteConfirm({ sub, onConfirm, onCancel }) {
 }
 
 // ── Subscription detail modal ─────────────────────────────────────────────────
-function SubDetail({ sub, onEdit, onDelete, onClose }) {
+function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency }) {
   const { t, lang } = useLang();
   const subCurrency = CURRENCIES.find(c => c.code === sub.currency) || CURRENCIES[0];
+  const userCurrencyObj = CURRENCIES.find(c => c.code === userCurrency) || subCurrency;
   const days = daysUntil(sub.next_billing_date);
   const months = monthsActive(sub.started_at);
   const totalSpent = parseFloat(sub.amount) * months;
   const dateLocale = lang === "tr" ? "tr-TR" : "en-US";
+  const [rate, setRate] = useState(null);
+  const [addingExpense, setAddingExpense] = useState(false);
+  const [expenseAdded, setExpenseAdded] = useState(false);
+  const needsConversion = sub.currency !== userCurrency;
+
+  useEffect(() => {
+    if (needsConversion) getRate(sub.currency, userCurrency).then(setRate);
+  }, [sub.currency, userCurrency, needsConversion]);
+
+  async function handleAddExpense() {
+    setAddingExpense(true);
+    const convertedAmount = rate ? parseFloat(sub.amount) * rate : parseFloat(sub.amount);
+    await onAddExpense(sub, convertedAmount, needsConversion ? userCurrency : sub.currency);
+    setAddingExpense(false);
+    setExpenseAdded(true);
+    setTimeout(() => setExpenseAdded(false), 2500);
+  }
 
   const startDate = new Date(sub.started_at).toLocaleDateString(dateLocale, {
     day: "numeric", month: "short", year: "numeric",
@@ -266,6 +308,11 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
                 style={{ backgroundColor: sub.is_active ? "var(--green)" : "var(--text-3)" }}
               />
               {sub.is_active ? t("subStatusActive") : t("subStatusInactive")} · {subCurrency.symbol}{parseFloat(sub.amount).toLocaleString(dateLocale)}
+              {needsConversion && rate && (
+                <span style={{ color: "var(--brand)" }}>
+                  {" "}≈ {userCurrencyObj.symbol}{(parseFloat(sub.amount) * rate).toLocaleString(dateLocale, { maximumFractionDigits: 2 })}
+                </span>
+              )}
             </p>
           </div>
           <button onClick={onClose} className="fin-icon-btn">
@@ -286,21 +333,36 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 p-5">
+        <div className="flex flex-col gap-2 p-5 pt-4">
           <button
-            onClick={onEdit}
-            className="flex-1 py-2.5 text-sm font-medium cursor-pointer transition-all"
-            style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)", borderRadius: 7 }}
+            onClick={handleAddExpense}
+            disabled={addingExpense || expenseAdded}
+            className="w-full py-2.5 text-sm font-medium cursor-pointer fin-btn-primary"
+            style={{ opacity: addingExpense ? 0.7 : 1 }}
           >
-            {t("subEdit")}
+            {expenseAdded ? `✓ ${t("subExpenseAdded")}` : addingExpense ? "…" : t("subAddAsExpense")}
+            {needsConversion && rate && !expenseAdded && !addingExpense && (
+              <span style={{ opacity: 0.75, marginLeft: 6 }}>
+                ({userCurrencyObj.symbol}{(parseFloat(sub.amount) * rate).toLocaleString(dateLocale, { maximumFractionDigits: 2 })})
+              </span>
+            )}
           </button>
-          <button
-            onClick={onDelete}
-            className="flex-1 py-2.5 text-sm font-medium cursor-pointer"
-            style={{ backgroundColor: "rgba(220,38,38,0.08)", color: "var(--red)", border: "1px solid rgba(220,38,38,0.15)", borderRadius: 7 }}
-          >
-            {t("deleteBtn")}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onEdit}
+              className="flex-1 py-2.5 text-sm font-medium cursor-pointer transition-all"
+              style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)", border: "1px solid var(--border)", borderRadius: 7 }}
+            >
+              {t("subEdit")}
+            </button>
+            <button
+              onClick={onDelete}
+              className="flex-1 py-2.5 text-sm font-medium cursor-pointer"
+              style={{ backgroundColor: "rgba(220,38,38,0.08)", color: "var(--red)", border: "1px solid rgba(220,38,38,0.15)", borderRadius: 7 }}
+            >
+              {t("deleteBtn")}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -488,8 +550,51 @@ function SubForm({ initial, onSave, onClose }) {
   );
 }
 
+// ── Subscription list row with optional currency conversion ───────────────────
+function SubRow({ sub, subCurr, needsConv, userCurrency, daysLabel, billingCycleLabel, dateLocale, borderTop, onClick }) {
+  const [rate, setRate] = useState(null);
+  useEffect(() => {
+    if (needsConv) getRate(sub.currency, userCurrency.code).then(setRate);
+  }, [sub.currency, userCurrency.code, needsConv]);
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-3.5 transition-all cursor-pointer text-left"
+      style={{
+        borderTop: borderTop ? "1px solid var(--border)" : "none",
+        backgroundColor: "transparent",
+        opacity: sub.is_active ? 1 : 0.5,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
+      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      <ServiceIcon name={sub.name} category={sub.category} size={40} />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate" style={{ color: "var(--text-1)" }}>{sub.name}</p>
+        <p className="text-xs" style={{ color: "var(--text-3)" }}>
+          {billingCycleLabel} · {daysLabel}
+        </p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="fin-mono text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+          {needsConv && rate
+            ? `${userCurrency.symbol}${(parseFloat(sub.amount) * rate).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            : `${subCurr.symbol}${parseFloat(sub.amount).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          }
+        </p>
+        {needsConv && (
+          <p className="text-[10px] fin-mono" style={{ color: "var(--text-3)" }}>
+            {subCurr.symbol}{parseFloat(sub.amount).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        )}
+      </div>
+    </button>
+  );
+}
+
 // ── Main Subscriptions component ──────────────────────────────────────────────
-export default function Subscriptions() {
+export default function Subscriptions({ onExpenseAdded }) {
   const { t, lang } = useLang();
   const currency = useCurrency();
 
@@ -535,6 +640,22 @@ export default function Subscriptions() {
     setSubs(prev => prev.filter(s => s.id !== id));
     setDeleteTarget(null);
     setDetailTarget(null);
+  }
+
+  async function handleAddAsExpense(sub, convertedAmount, usedCurrency) {
+    await authFetch(`${API}/transactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        description: sub.name,
+        amount: convertedAmount,
+        type: "expense",
+        category: SUB_TO_TX_CATEGORY[sub.category] || "other",
+        date: new Date().toISOString().split("T")[0],
+        currency: usedCurrency,
+      }),
+    });
+    onExpenseAdded?.();
   }
 
   function openEdit(sub) {
@@ -630,37 +751,25 @@ export default function Subscriptions() {
                 {items.map((sub, i) => {
                   const days = daysUntil(sub.next_billing_date);
                   const subCurr = CURRENCIES.find(c => c.code === sub.currency) || CURRENCIES[0];
+                  const needsConv = sub.currency !== currency.code;
                   const daysLabel =
                     days === 0 ? t("subToday") :
                     days < 0  ? t("subOverdue") :
                     `${days} ${t("subDays")}`;
 
                   return (
-                    <button
+                    <SubRow
                       key={sub.id}
+                      sub={sub}
+                      subCurr={subCurr}
+                      needsConv={needsConv}
+                      userCurrency={currency}
+                      daysLabel={daysLabel}
+                      billingCycleLabel={t(`subCycle_${sub.billing_cycle}`)}
+                      dateLocale={dateLocale}
+                      borderTop={i > 0}
                       onClick={() => setDetailTarget(sub)}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 transition-all cursor-pointer text-left"
-                      style={{
-                        borderTop: i > 0 ? "1px solid var(--border)" : "none",
-                        backgroundColor: "transparent",
-                        opacity: sub.is_active ? 1 : 0.5,
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <ServiceIcon name={sub.name} category={sub.category} size={40} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate" style={{ color: "var(--text-1)" }}>
-                          {sub.name}
-                        </p>
-                        <p className="text-xs" style={{ color: "var(--text-3)" }}>
-                          {t(`subCycle_${sub.billing_cycle}`)} · {daysLabel}
-                        </p>
-                      </div>
-                      <p className="fin-mono text-sm font-semibold shrink-0" style={{ color: "var(--text-1)" }}>
-                        {subCurr.symbol}{parseFloat(sub.amount).toLocaleString(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </button>
+                    />
                   );
                 })}
               </div>
@@ -696,6 +805,8 @@ export default function Subscriptions() {
         onEdit={() => openEdit(detailTarget)}
         onDelete={() => setDeleteTarget(detailTarget)}
         onClose={() => setDetailTarget(null)}
+        onAddExpense={handleAddAsExpense}
+        userCurrency={currency.code}
       />
     )}
 
