@@ -985,13 +985,16 @@ Category rules:
   salary        → salary, wages, payroll
   other         → everything else
 
-Skip these entirely — do NOT include them in the output:
-- Interest/late fees, balance transfers
-- Card repayments / payments made TO the credit card
-- Turkish: "hesaptan ödeme", "otomatik ödeme", "şube-hesaptan ödeme", "kredi kartı ödemesi", "hesap özeti ödemesi", "ekstreden transfer"
-- Any line where money is being paid TO settle the card balance (not a purchase)
+CRITICAL — Turkish credit card statement sign convention:
+In Turkish credit card statements, a "+" at the end of a line means money was credited TO the card (i.e. a payment made to settle the card balance). It does NOT mean income.
+- Lines ending with "+" are almost always card payments → SKIP them entirely
+- The ONLY exception: lines ending with "+" that contain "iade" (refund) → these are merchant refunds → type "income"
+- All other lines (no sign, or "-") are purchases → type "expense"
 
-Credit card purchases = expense. Refunds/cashbacks = income. Payments to the card itself = SKIP.
+Skip these entirely — do NOT include in output:
+- Any line ending with "+" UNLESS it contains "iade"
+- Interest, fees: "faiz", "kkdf", "bsmv", "komisyon", "gecikme"
+- Turkish: "hesaptan ödeme", "otomatik ödeme", "bankkart lira ile ödeme", "kredi kartı ödemesi", "hesap özeti ödemesi", "ekstreden transfer"
 
 Return only the JSON array.` }
       ]
