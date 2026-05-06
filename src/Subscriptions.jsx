@@ -16,45 +16,91 @@ function authFetch(url, opts = {}) {
   });
 }
 
+const SERVICE_DOMAIN = {
+  "chatgpt": "chat.openai.com",
+  "openai": "openai.com",
+  "claude": "claude.ai",
+  "anthropic": "anthropic.com",
+  "spotify": "spotify.com",
+  "netflix": "netflix.com",
+  "apple music": "music.apple.com",
+  "apple tv": "tv.apple.com",
+  "youtube": "youtube.com",
+  "discord": "discord.com",
+  "github": "github.com",
+  "notion": "notion.so",
+  "figma": "figma.com",
+  "adobe": "adobe.com",
+  "dropbox": "dropbox.com",
+  "google one": "one.google.com",
+  "google": "google.com",
+  "microsoft": "microsoft.com",
+  "office": "office.com",
+  "zoom": "zoom.us",
+  "slack": "slack.com",
+  "amazon prime": "primevideo.com",
+  "amazon": "amazon.com",
+  "prime video": "primevideo.com",
+  "hbo": "hbomax.com",
+  "disney": "disneyplus.com",
+  "hulu": "hulu.com",
+  "icloud": "icloud.com",
+  "duolingo": "duolingo.com",
+  "canva": "canva.com",
+  "cursor": "cursor.sh",
+  "perplexity": "perplexity.ai",
+  "midjourney": "midjourney.com",
+  "linear": "linear.app",
+  "vercel": "vercel.com",
+  "1password": "1password.com",
+  "lastpass": "lastpass.com",
+  "bitwarden": "bitwarden.com",
+  "grammarly": "grammarly.com",
+  "todoist": "todoist.com",
+  "evernote": "evernote.com",
+  "dropbox": "dropbox.com",
+  "twitch": "twitch.tv",
+  "steam": "store.steampowered.com",
+  "playstation": "playstation.com",
+  "xbox": "xbox.com",
+  "apple": "apple.com",
+};
+
 const SERVICE_EMOJI = {
   chatgpt: "🤖", openai: "🤖",
   claude: "✳️", anthropic: "✳️",
-  spotify: "🎵",
-  netflix: "🎬",
+  spotify: "🎵", netflix: "🎬",
   "apple music": "🎵", "apple tv": "🎬",
-  youtube: "▶️",
-  discord: "💬",
-  github: "⌨️",
-  notion: "📝",
-  figma: "🎨",
-  adobe: "🎨",
-  dropbox: "☁️",
-  google: "🔍",
+  youtube: "▶️", discord: "💬",
+  github: "⌨️", notion: "📝",
+  figma: "🎨", adobe: "🎨",
+  dropbox: "☁️", google: "🔍",
   microsoft: "💼", office: "💼",
-  zoom: "📹",
-  slack: "💬",
+  zoom: "📹", slack: "💬",
   amazon: "📦", prime: "📦",
   hbo: "🎬", disney: "🎬", hulu: "🎬",
-  icloud: "☁️",
-  duolingo: "🦜",
-  canva: "🖌️",
-  cursor: "⌨️",
-  perplexity: "🔍",
-  midjourney: "🎨",
-  linear: "📋",
-  vercel: "▲",
+  icloud: "☁️", duolingo: "🦜",
+  canva: "🖌️", cursor: "⌨️",
+  perplexity: "🔍", midjourney: "🎨",
+  linear: "📋", vercel: "▲",
 };
 
 const CATEGORY_EMOJI = {
-  ai: "✨",
-  entertainment: "🎬",
-  music: "🎵",
-  finance: "🏦",
-  productivity: "⚡",
-  health: "❤️",
-  news: "📰",
-  other: "📦",
+  ai: "✨", entertainment: "🎬",
+  music: "🎵", finance: "🏦",
+  productivity: "⚡", health: "❤️",
+  news: "📰", other: "📦",
 };
+
+function getServiceDomain(name) {
+  const lower = name.toLowerCase();
+  // Sort by key length desc so "amazon prime" matches before "amazon"
+  const entries = Object.entries(SERVICE_DOMAIN).sort((a, b) => b[0].length - a[0].length);
+  for (const [key, domain] of entries) {
+    if (lower.includes(key)) return domain;
+  }
+  return null;
+}
 
 function getEmoji(name, category) {
   const lower = name.toLowerCase();
@@ -62,6 +108,48 @@ function getEmoji(name, category) {
     if (lower.includes(key)) return emoji;
   }
   return CATEGORY_EMOJI[category] || "📦";
+}
+
+function ServiceIcon({ name, category, size = 40 }) {
+  const [failed, setFailed] = useState(false);
+  const domain = getServiceDomain(name);
+  const emoji = getEmoji(name, category);
+
+  if (!domain || failed) {
+    return (
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{
+          width: size, height: size,
+          backgroundColor: "var(--surface-2)",
+          borderRadius: "50%",
+          fontSize: size * 0.45,
+        }}
+      >
+        {emoji}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        width: size, height: size,
+        backgroundColor: "var(--surface-2)",
+        borderRadius: "50%",
+      }}
+    >
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+        alt={name}
+        width={size * 0.6}
+        height={size * 0.6}
+        onError={() => setFailed(true)}
+        style={{ objectFit: "contain", borderRadius: 4 }}
+      />
+    </div>
+  );
 }
 
 function daysUntil(dateStr) {
@@ -169,12 +257,7 @@ function SubDetail({ sub, onEdit, onDelete, onClose }) {
       <div className="w-full max-w-md overflow-hidden" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10 }}>
         {/* Header */}
         <div className="flex items-center gap-3 p-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
-          <div
-            className="w-12 h-12 flex items-center justify-center text-2xl shrink-0"
-            style={{ backgroundColor: "var(--surface-2)", borderRadius: "50%" }}
-          >
-            {getEmoji(sub.name, sub.category)}
-          </div>
+          <ServiceIcon name={sub.name} category={sub.category} size={48} />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-base truncate" style={{ color: "var(--text-1)" }}>{sub.name}</p>
             <p className="text-xs flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
@@ -565,12 +648,7 @@ export default function Subscriptions() {
                       onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      <div
-                        className="w-10 h-10 flex items-center justify-center text-xl shrink-0"
-                        style={{ backgroundColor: "var(--surface-2)", borderRadius: "50%" }}
-                      >
-                        {getEmoji(sub.name, sub.category)}
-                      </div>
+                      <ServiceIcon name={sub.name} category={sub.category} size={40} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate" style={{ color: "var(--text-1)" }}>
                           {sub.name}

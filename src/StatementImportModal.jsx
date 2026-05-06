@@ -230,10 +230,10 @@ export default function StatementImportModal({ onClose, onImported }) {
                     </div>
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>
-                        {isDragging ? "Bırakın…" : t("importChooseFile")}
+                        {isDragging ? t("importDropNow") : t("importChooseFile")}
                       </div>
                       <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>
-                        {isDragging ? "" : "Sürükleyip bırakın veya tıklayın · PDF, JPG, PNG, WEBP"}
+                        {isDragging ? "" : t("importDragDrop")}
                       </div>
                     </div>
                   </>
