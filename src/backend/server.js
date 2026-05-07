@@ -72,13 +72,20 @@ const isProd = process.env.NODE_ENV === "production" ||
                !FRONTEND_URL.startsWith("http://localhost");
 
 // CORS must run before helmet so credentials header isn't stripped
+const ALLOWED_ORIGINS = new Set(
+  (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean)
+);
 app.use(cors({
   origin: (origin, callback) => {
     if (
       !origin ||
       origin.startsWith("http://localhost:") ||
       origin === FRONTEND_URL ||
-      origin.endsWith(".vercel.app")
+      origin.endsWith(".vercel.app") ||
+      ALLOWED_ORIGINS.has(origin)
     ) {
       callback(null, true);
     } else {
@@ -89,6 +96,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.set("trust proxy", 1);
 app.use(helmet());
 
 app.use(express.json({ limit: "10kb" }));
