@@ -231,6 +231,7 @@ function Recurring({ onClose, onChanged }) {
   const { t, formatDate } = useLang();
   const { symbol } = useCurrency();
   const [rules, setRules]   = useState([]);
+  const [subNames, setSubNames] = useState([]); // lowercased subscription names
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // null = list; "new" = new form; obj = edit
   const [saving, setSaving] = useState(false);
@@ -239,9 +240,14 @@ function Recurring({ onClose, onChanged }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authFetch(`${API}/recurring`);
-      const data = await res.json();
-      if (Array.isArray(data)) setRules(data);
+      const [rRes, sRes] = await Promise.all([
+        authFetch(`${API}/recurring`),
+        authFetch(`${API}/subscriptions`),
+      ]);
+      const rData = await rRes.json().catch(() => []);
+      const sData = await sRes.json().catch(() => []);
+      if (Array.isArray(rData)) setRules(rData);
+      if (Array.isArray(sData)) setSubNames(sData.map((s) => (s.name || "").trim().toLowerCase()).filter(Boolean));
     } catch {
       setError(t("serverError"));
     } finally {
@@ -252,6 +258,18 @@ function Recurring({ onClose, onChanged }) {
   useEffect(() => { load(); }, [load]);
 
   const handleSubmit = async (payload) => {
+    // Warn if the description matches an existing Subscription name.
+    // Only check when creating new (not editing) and only for expenses.
+    const isNew = !editing || editing === "new";
+    if (isNew && payload.type === "expense" && payload.description) {
+      const desc = payload.description.trim().toLowerCase();
+      const match = subNames.find((n) => n === desc || n.includes(desc) || desc.includes(n));
+      if (match) {
+        const ok = window.confirm(t("recurringDuplicateWarn")({ name: payload.description.trim() }));
+        if (!ok) return;
+      }
+    }
+
     setSaving(true);
     setError("");
     try {

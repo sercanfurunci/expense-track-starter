@@ -235,6 +235,8 @@ const translations = {
     recurringPause: "Pause",
     recurringResume: "Resume",
     recurringDeleteConfirm: "Delete this recurring rule? Already-created transactions will be kept.",
+    recurringDuplicateWarn: ({ name }) => `"${name}" already exists in Subscriptions. Adding it here will double-count it every period. Continue anyway?`,
+    subsTrackingOnly: "Subscriptions are tracked only — they don't auto-create transactions. Use \"Add as expense\" on a card, or set up a Recurring rule for automatic logging.",
 
     // Profile modal
     profileTitle: "Profile",
@@ -544,6 +546,8 @@ const translations = {
     recurringPause: "Duraklat",
     recurringResume: "Devam ettir",
     recurringDeleteConfirm: "Bu tekrarlayan kural silinsin mi? Daha önce eklenmiş işlemler kalacaktır.",
+    recurringDuplicateWarn: ({ name }) => `"${name}" zaten Üyelikler'de var. Burada da eklersen her dönem iki kez sayılır. Yine de devam edelim mi?`,
+    subsTrackingOnly: "Üyelikler sadece takip için listelenir — otomatik işlem oluşturmaz. Kartta \"Gider olarak ekle\" butonunu kullan veya otomatik kayıt için Tekrarlayan kuralı oluştur.",
 
     // Profile modal
     profileTitle: "Profil",
