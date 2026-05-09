@@ -8,13 +8,11 @@ function Summary({ transactions }) {
   const { t } = useLang();
   const { symbol } = useCurrency();
 
-  const totalIncome = transactions
-    .filter((tx) => tx.type === "income")
-    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+  const incomeTxs = transactions.filter((tx) => tx.type === "income");
+  const expenseTxs = transactions.filter((tx) => tx.type === "expense");
 
-  const totalExpenses = transactions
-    .filter((tx) => tx.type === "expense")
-    .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+  const totalIncome = incomeTxs.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+  const totalExpenses = expenseTxs.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
   const balance = totalIncome - totalExpenses;
   const isPositive = balance >= 0;
@@ -49,6 +47,9 @@ function Summary({ transactions }) {
         >
           +{symbol}{fmt(totalIncome)}
         </p>
+        <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
+          {incomeTxs.length} {t("statTransactions")}
+        </p>
         <div className="fin-bar" style={{ background: "var(--green)" }} />
       </div>
 
@@ -60,6 +61,9 @@ function Summary({ transactions }) {
           style={{ color: "var(--red)", fontSize: "clamp(1.1rem, 1.6vw, 1.45rem)", lineHeight: 1.1 }}
         >
           −{symbol}{fmt(totalExpenses)}
+        </p>
+        <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
+          {expenseTxs.length} {t("statTransactions")}
         </p>
         <div className="fin-bar" style={{ background: "var(--red)" }} />
       </div>
