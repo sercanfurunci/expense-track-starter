@@ -92,8 +92,22 @@ CREATE TABLE subscriptions (
   is_active BOOLEAN DEFAULT TRUE,
   auto_charge BOOLEAN NOT NULL DEFAULT FALSE,  -- when TRUE, materializeDueSubscriptions logs each billing as an expense
   last_charged_date DATE,                       -- last date materialized as a transaction
+  reminder_days INTEGER,                        -- 3 | 7 | 14 — days before next_billing_date to send reminder email
   notes TEXT,
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Savings goals
+CREATE TABLE goals (
+  id             SERIAL PRIMARY KEY,
+  user_id        INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  emoji          TEXT NOT NULL DEFAULT '🎯',
+  target_amount  NUMERIC NOT NULL,
+  saved_amount   NUMERIC NOT NULL DEFAULT 0,
+  currency       TEXT NOT NULL DEFAULT 'USD',
+  target_date    DATE,
+  created_at     TIMESTAMP DEFAULT NOW()
 );
 
 -- Budgets (one row per user/category)
@@ -149,9 +163,12 @@ App                     # auth state, transactions state, theme, token, currentU
     ├── Budgets             # monthly budget per category with progress bars; computes current-month spending from transactions prop
     │   ├── BudgetForm      # add/edit modal (category dropdown filtered to unset categories on add)
     │   └── DeleteConfirm   # delete confirmation modal
-    ├── Subscriptions       # subscription tracker: list, add/edit/delete, monthly total, brand icons
-    │   ├── SubForm         # add/edit modal
+    ├── Subscriptions       # subscription tracker: list, add/edit/delete, monthly total, brand icons, reminder_days
+    │   ├── SubForm         # add/edit modal (includes reminder_days dropdown)
     │   ├── SubDetail       # detail/stats modal
+    │   └── DeleteConfirm   # delete confirmation modal
+    ├── Goals               # savings goals: emoji, target/saved amounts, progress bar, optional deadline
+    │   ├── GoalForm        # add/edit modal with emoji picker
     │   └── DeleteConfirm   # delete confirmation modal
     ├── StatementImportModal # AI-powered bank statement import (PDF/image, drag-and-drop)
     └── ProfileModal        # edit display name + currency picker (8 currencies)
@@ -212,6 +229,10 @@ Google Fonts are preconnected and preloaded in `index.html` to minimize first-re
 | GET | `/budgets` | JWT | List user's budgets |
 | PUT | `/budgets` | JWT | Upsert budget by category — body `{ category, amount }` |
 | DELETE | `/budgets/:id` | JWT | Delete budget |
+| GET | `/goals` | JWT | List savings goals |
+| POST | `/goals` | JWT | Create goal |
+| PUT | `/goals/:id` | JWT | Update goal |
+| DELETE | `/goals/:id` | JWT | Delete goal |
 | GET | `/recurring` | JWT | List recurring rules |
 | POST | `/recurring` | JWT | Create recurring rule |
 | PUT | `/recurring/:id` | JWT | Update recurring rule (incl. pause/resume via `is_active`) |
@@ -236,6 +257,7 @@ Google Fonts are preconnected and preloaded in `index.html` to minimize first-re
 - Falls back to emoji if domain unknown or image fails to load
 - Monthly total normalises weekly/yearly amounts: weekly × 52 / 12, yearly / 12
 - **Auto-charge:** Per-row `auto_charge` boolean. When ON, `materializeDueSubscriptions(userId)` (called inside `GET /transactions` alongside `materializeDueRecurring`) walks each subscription where `auto_charge = TRUE AND is_active = TRUE AND next_billing_date <= today`, INSERTs an expense transaction (category mapped via backend `SUB_TO_TX_CAT`), advances `next_billing_date` per `billing_cycle`, and stamps `last_charged_date`. 60-iteration safety cap. Off = tracking-only; user must press "Add as expense" manually.
+- **Bill reminders:** Per-row `reminder_days` (3 | 7 | 14 | null). `sendSubscriptionReminders()` runs on server start and every hour via `setInterval`; fires once per calendar day (`_lastReminderDate` guard). Queries subscriptions where `(next_billing_date - reminder_days days) = today` and sends a branded HTML email via Resend to each affected user.
 - **Overlap with Recurring:** Branded services live in Subscriptions (with auto_charge ON for hands-off logging). Recurring is for non-branded periodic items (rent, salary, gym). The Recurring form warns if the description matches an existing subscription name to prevent double-counting.
 
 ### Budgets
@@ -253,6 +275,14 @@ Google Fonts are preconnected and preloaded in `index.html` to minimize first-re
 - **Pause/Resume:** Toggle `is_active` via `PUT /recurring/:id`.
 - **Delete:** Removes the rule only — already-materialized transactions stay in the user's history.
 - **UI entry point:** "Recurring" pill button in the TransactionForm header next to "Import Statement". Opens `Recurring.jsx` modal (list + form).
+
+### Savings Goals
+
+- One `goals` table row per goal; no category restriction
+- `saved_amount` updated by the user manually (edit the goal to log new savings)
+- Progress bar: brand color → turns green at 100%; shows remaining amount and percentage
+- Dashboard widget: shows top 3 goals with mini progress bars; "See all →" navigates to Goals tab
+- `monthsActive` helper in `Subscriptions.jsx` uses `Math.max(1, m)` (not `m+1`) to avoid off-by-one when subscription hasn't yet completed its second billing cycle
 
 ### Spending Trends (Analytics)
 

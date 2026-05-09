@@ -1,21 +1,26 @@
-# Finance Tracker
+# Moneto
 
-A full-stack personal finance app to track income and expenses, visualize spending, and manage your financial health — with multi-currency support, analytics, and a clean bilingual UI.
+A full-stack personal finance app to track income and expenses, manage budgets and subscriptions, set savings goals, and import bank statements with AI — with multi-currency support and a clean bilingual UI.
 
-**Live app → [expense-track-starter.vercel.app](https://expense-track-starter.vercel.app)**
+**Live app → [furunci.tech](https://furunci.tech)**
 
 ---
 
 ## Features
 
-- **Dashboard** — balance overview, expense donut chart by category, recent activity
-- **Transactions** — add, edit, delete income & expenses with category tagging
-- **Analytics** — 30-day bar chart, average expense, busiest day, category breakdown
-- **Multi-currency** — USD, EUR, GBP, TRY, JPY, CAD, AUD, CHF — syncs across devices
+- **Dashboard** — balance overview, expense donut chart, recent activity, savings goals widget, this-month stats (avg daily spend, days left, top category, all-time savings rate)
+- **Transactions** — add, edit, delete income & expenses with category tagging; search, date range filter, sort; CSV export
+- **AI Statement Import** — upload a bank statement PDF or photo; AI extracts all transactions automatically
+- **Analytics** — 30-day bar chart, stat cards, category breakdown, month-over-month spending trends
+- **Budgets** — monthly spending limits per category with progress bars (green / yellow / red)
+- **Subscriptions** — track recurring services with brand icons, auto-charge to expenses, bill reminder emails
+- **Savings Goals** — create goals with emoji, target amount, optional deadline; progress bar turns green at 100%
+- **Recurring Transactions** — schedule income/expense rules that materialize automatically on each visit
+- **Multi-currency** — USD, EUR, GBP, TRY, JPY, CAD, AUD, CHF — syncs across devices via live exchange rates
 - **Profile** — set display name and preferred currency
-- **Auth** — email verification, JWT sessions, forgot/reset password
+- **Auth** — email verification, JWT sessions, forgot/reset password (via Resend)
 - **Dark / Light mode** — persisted per device
-- **Bilingual** — English and Turkish (TR) throughout every page
+- **Bilingual** — English and Turkish (TR) throughout
 
 ## Tech Stack
 
@@ -24,8 +29,10 @@ A full-stack personal finance app to track income and expenses, visualize spendi
 | Frontend | React 19, Vite, Tailwind CSS v4, Recharts |
 | Backend | Node.js, Express |
 | Database | PostgreSQL (Neon) |
-| Auth | JWT, bcrypt, Nodemailer (Gmail SMTP) |
-| Hosting | Vercel (frontend) + Render (backend) |
+| Auth | JWT, bcrypt |
+| Email | Resend HTTPS API |
+| AI | Anthropic claude-haiku-4-5 |
+| Hosting | Vercel (frontend) + Railway (backend) |
 
 ## Local Development
 
@@ -33,7 +40,8 @@ A full-stack personal finance app to track income and expenses, visualize spendi
 
 - Node.js 18+
 - A [Neon](https://neon.tech) PostgreSQL database
-- A Gmail account for sending verification/reset emails
+- A [Resend](https://resend.com) account for transactional email
+- An [Anthropic](https://console.anthropic.com) API key for AI statement import
 
 ### Frontend
 
@@ -65,8 +73,9 @@ Create `src/backend/.env`:
 ```env
 JWT_SECRET=your_jwt_secret
 ADMIN_SECRET=your_admin_secret
-MAIL_USER=your@gmail.com
-MAIL_PASS=your_gmail_app_password
+RESEND_API_KEY=your_resend_api_key
+MAIL_FROM=noreply@yourdomain.com
+ANTHROPIC_API_KEY=your_anthropic_api_key
 BACKEND_URL=http://localhost:3000
 FRONTEND_URL=http://localhost:5173
 DB_HOST=your_neon_host
@@ -80,53 +89,29 @@ DB_PORT=5432
 node server.js    # http://localhost:3000
 ```
 
-### Database Setup
-
-Run these in the Neon SQL editor (or any PostgreSQL client):
-
-```sql
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  is_verified BOOLEAN DEFAULT FALSE,
-  verify_token TEXT,
-  verify_expires TIMESTAMP,
-  reset_token TEXT,
-  reset_expires TIMESTAMP,
-  username TEXT,
-  currency TEXT DEFAULT 'USD',
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE transactions (
-  id SERIAL PRIMARY KEY,
-  description TEXT,
-  amount NUMERIC,
-  type TEXT,
-  category TEXT,
-  date TIMESTAMP DEFAULT NOW(),
-  user_id INTEGER REFERENCES users(id)
-);
-```
+All tables are created automatically on first start via `CREATE TABLE IF NOT EXISTS`.
 
 ## Project Structure
 
 ```
 src/
 ├── backend/
-│   └── server.js          # Express API (auth + transactions)
-├── App.jsx                # Root — auth state, tab navigation, theme
-├── LandingPage.jsx        # Marketing page with animated mock card
-├── Dashboard.jsx          # Donut chart + recent activity
-├── Analytics.jsx          # Bar chart + stats + category breakdown
-├── TransactionForm.jsx    # Add transaction form
-├── TransactionList.jsx    # Filterable list with edit/delete
-├── Summary.jsx            # Balance + income/expense cards
-├── ProfileModal.jsx       # Display name + currency picker
-├── currency.jsx           # Currency context + 8 supported currencies
-├── i18n.jsx               # EN/TR translations context
-└── App.css                # Design tokens + custom utility classes
+│   └── server.js              # Express API — auth, transactions, subscriptions,
+│                              #   budgets, goals, recurring, rates, bill reminders
+├── App.jsx                    # Root — auth state, tab navigation, theme
+├── LandingPage.jsx            # Marketing page with live mock preview
+├── Dashboard.jsx              # Donut chart + recent activity + goals widget
+├── Analytics.jsx              # Bar chart + stats + spending trends
+├── TransactionForm.jsx        # Add transaction form + recurring/import entry points
+├── TransactionList.jsx        # Filterable list with edit/delete + CSV export
+├── Budgets.jsx                # Monthly budget per category with progress bars
+├── Subscriptions.jsx          # Subscription tracker with brand icons + reminder
+├── Goals.jsx                  # Savings goals with progress bars
+├── Summary.jsx                # Balance + income/expense cards
+├── ProfileModal.jsx           # Display name + currency picker
+├── currency.jsx               # Currency context + 8 supported currencies
+├── i18n.jsx                   # EN/TR translations context
+└── App.css                    # Design tokens + custom utility classes
 ```
 
 ## API Reference
@@ -140,7 +125,26 @@ src/
 | POST | `/auth/reset-password` | — | Set new password |
 | GET | `/auth/me` | JWT | Get current user profile |
 | PUT | `/auth/profile` | JWT | Update username / currency |
-| GET | `/transactions` | JWT | List transactions |
+| GET | `/transactions` | JWT | List transactions (also materializes due recurring + subscriptions) |
 | POST | `/transactions` | JWT | Create transaction |
 | PUT | `/transactions/:id` | JWT | Update transaction |
 | DELETE | `/transactions/:id` | JWT | Delete transaction |
+| POST | `/transactions/import` | JWT | AI statement import (PDF/image multipart) |
+| POST | `/transactions/import/bulk` | JWT | Save previewed transactions in bulk |
+| GET | `/subscriptions` | JWT | List subscriptions |
+| POST | `/subscriptions` | JWT | Create subscription |
+| PUT | `/subscriptions/:id` | JWT | Update subscription |
+| DELETE | `/subscriptions/:id` | JWT | Delete subscription |
+| GET | `/budgets` | JWT | List budgets |
+| PUT | `/budgets` | JWT | Upsert budget by category |
+| DELETE | `/budgets/:id` | JWT | Delete budget |
+| GET | `/goals` | JWT | List savings goals |
+| POST | `/goals` | JWT | Create goal |
+| PUT | `/goals/:id` | JWT | Update goal |
+| DELETE | `/goals/:id` | JWT | Delete goal |
+| GET | `/recurring` | JWT | List recurring rules |
+| POST | `/recurring` | JWT | Create recurring rule |
+| PUT | `/recurring/:id` | JWT | Update / pause / resume rule |
+| DELETE | `/recurring/:id` | JWT | Delete rule (keeps materialized transactions) |
+| GET | `/rates` | — | Exchange rate `?from=X&to=Y` — 24h cache via Frankfurter |
+| GET | `/admin/users` | x-admin-secret | List all users |
