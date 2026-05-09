@@ -59,8 +59,11 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Login failed"); return; }
-      if (!data?.user) { setError("Login error: no user data. Please try again."); return; }
+      if (!res.ok) {
+        setError(res.status === 401 ? t("loginInvalidCredentials") : t("serverError"));
+        return;
+      }
+      if (!data?.user) { setError(t("serverError")); return; }
       onSuccess(data.user, data.token);
     } catch {
       setError(t("serverError"));
