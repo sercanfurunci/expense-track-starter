@@ -11,6 +11,7 @@ import ResetPasswordPage from "./ResetPasswordPage";
 import ProfileModal from "./ProfileModal";
 import LandingPage from "./LandingPage";
 import PrivacyPage from "./PrivacyPage";
+import TermsPage from "./TermsPage";
 import { CurrencyProvider } from "./currency.jsx";
 import { useLang } from "./i18n.jsx";
 import Subscriptions from "./Subscriptions";
@@ -116,6 +117,7 @@ function App() {
   });
   const [authPage, setAuthPage] = useState(() => {
     if (window.location.pathname === "/privacy") return "privacy";
+    if (window.location.pathname === "/terms") return "terms";
     if (new URLSearchParams(window.location.search).get("reset_token")) return "reset-password";
     return "landing";
   });
@@ -253,6 +255,19 @@ function App() {
     );
   }
 
+  if (authPage === "terms") {
+    return (
+      <TermsPage
+        isDark={isDark}
+        toggleDark={() => setIsDark((d) => !d)}
+        onBack={() => {
+          window.history.replaceState(null, "", "/");
+          setAuthPage("landing");
+        }}
+      />
+    );
+  }
+
   // ── Auth screens ──
   if (!currentUser) {
     if (authPage === "landing") {
@@ -286,6 +301,8 @@ function App() {
             onBack={() => setAuthPage("landing")}
             isDark={isDark}
             toggleDark={() => setIsDark((d) => !d)}
+            onShowTerms={() => setAuthPage("terms")}
+            onShowPrivacy={() => setAuthPage("privacy")}
           />
         )}
       </div>
@@ -403,6 +420,8 @@ function App() {
       <footer className="hidden sm:flex items-center justify-between max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 text-xs mt-auto" style={{ borderTop: "1px solid var(--border)", color: "var(--text-3)" }}>
         <span>© {new Date().getFullYear()} Moneto</span>
         <div className="flex items-center gap-4">
+          <button onClick={() => setAuthPage("terms")} className="hover:opacity-70 transition-opacity">{t("termsOfService")}</button>
+          <span style={{ color: "var(--border-2)" }}>·</span>
           <button onClick={() => setAuthPage("privacy")} className="hover:opacity-70 transition-opacity">{t("privacyPolicy")}</button>
           <span style={{ color: "var(--border-2)" }}>·</span>
           <span>v1.0</span>

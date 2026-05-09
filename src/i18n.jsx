@@ -29,8 +29,11 @@ const translations = {
     deletingAccount: "Deleting…",
     deleteAccountFailed: "Failed to delete account",
 
-    // Privacy
+    // Privacy & Terms
     privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
+    registerAgreeTerms: "I have read and agree to the",
+    registerAnd: "and",
 
     // Auth
     signInTitle: "Sign in to your account",
@@ -380,8 +383,11 @@ const translations = {
     deletingAccount: "Siliniyor…",
     deleteAccountFailed: "Hesap silinemedi",
 
-    // Privacy
+    // Privacy & Terms
     privacyPolicy: "Gizlilik Politikası",
+    termsOfService: "Kullanım Koşulları",
+    registerAgreeTerms: "Okudum ve kabul ediyorum:",
+    registerAnd: "ve",
 
     // Auth
     signInTitle: "Hesabınıza giriş yapın",

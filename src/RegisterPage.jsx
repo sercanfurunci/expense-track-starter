@@ -36,10 +36,11 @@ function EyeIcon({ open }) {
   );
 }
 
-function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
+function RegisterPage({ onSwitch, onBack, isDark, toggleDark, onShowTerms, onShowPrivacy }) {
   const { t, lang, toggleLang } = useLang();
 
   const [verifyMethod, setVerifyMethod] = useState("email");
+  const [agreed, setAgreed] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -361,7 +362,26 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark }) {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 shrink-0 accent-[var(--brand)] w-4 h-4 cursor-pointer"
+              />
+              <span className="text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
+                {t("registerAgreeTerms")}{" "}
+                <button type="button" onClick={onShowTerms} className="font-medium hover:underline" style={{ color: "var(--brand)" }}>
+                  {t("termsOfService")}
+                </button>
+                {" "}{t("registerAnd")}{" "}
+                <button type="button" onClick={onShowPrivacy} className="font-medium hover:underline" style={{ color: "var(--brand)" }}>
+                  {t("privacyPolicy")}
+                </button>
+              </span>
+            </label>
+
+            <button type="submit" disabled={loading || !agreed} className="fin-btn-primary w-full mt-1 disabled:opacity-50">
               {verifyMethod === "email"
                 ? (loading ? t("creatingAccount") : t("createAccountBtn"))
                 : (loading ? t("sendingCode") : t("sendCode"))}
