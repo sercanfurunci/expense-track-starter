@@ -1,7 +1,15 @@
+import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useLang } from "./i18n.jsx";
 import { useCurrency } from "./currency.jsx";
 import Summary from "./Summary.jsx";
+
+const API = import.meta.env.VITE_API_URL;
+
+function authFetch(url, opts = {}) {
+  const token = localStorage.getItem("auth_token");
+  return fetch(url, { ...opts, credentials: "include", headers: { ...opts.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+}
 
 const catColors = {
   food:          "#F97316",
@@ -29,9 +37,17 @@ function ChartTooltip({ active, payload, t, symbol }) {
   );
 }
 
-function Dashboard({ transactions }) {
+function Dashboard({ transactions, onNavigate }) {
   const { t, formatDate } = useLang();
   const { symbol } = useCurrency();
+  const [goals, setGoals] = useState([]);
+
+  useEffect(() => {
+    authFetch(`${API}/goals`)
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setGoals(d); })
+      .catch(() => {});
+  }, []);
 
   const expenses = transactions.filter((tx) => tx.type === "expense");
   const totalExpenses = expenses.reduce((s, tx) => s + parseFloat(tx.amount), 0);
@@ -252,6 +268,45 @@ function Dashboard({ transactions }) {
                 </p>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Savings goals widget ── */}
+      {goals.length > 0 && (
+        <div className="mt-4 fin-card rounded-2xl overflow-hidden anim-5">
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+            <p className="fin-label">{t("dashGoals")}</p>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate("goals")}
+                className="text-xs font-medium transition-opacity hover:opacity-70"
+                style={{ color: "var(--brand)" }}
+              >
+                {t("dashGoalsSeeAll")} →
+              </button>
+            )}
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+            {goals.slice(0, 3).map(g => {
+              const pct = Math.min(100, Math.round((parseFloat(g.saved_amount || 0) / parseFloat(g.target_amount)) * 100));
+              const done = pct >= 100;
+              const barColor = done ? "var(--green)" : "var(--brand)";
+              return (
+                <div key={g.id} className="flex items-center gap-3 px-5 py-3.5">
+                  <span className="text-lg shrink-0">{g.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{g.name}</p>
+                      <span className="fin-mono text-xs font-bold ml-3 shrink-0" style={{ color: barColor }}>{pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--surface-2)" }}>
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
