@@ -194,7 +194,7 @@ function monthsActive(startedAt) {
   const start = new Date(startedAt);
   const now = new Date();
   const m = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-  return Math.max(1, m + 1);
+  return Math.max(1, m);
 }
 
 const CATEGORIES = ["ai", "entertainment", "music", "finance", "productivity", "health", "news", "other"];
