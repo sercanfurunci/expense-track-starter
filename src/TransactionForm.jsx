@@ -28,8 +28,7 @@ function TransactionForm({ onAdd, onRefresh }) {
     setCategory("food");
   };
 
-  function handleAddCat(e) {
-    e.preventDefault();
+  function handleAddCat() {
     const ok = addCat(newCatInput);
     if (ok) {
       setCategory(newCatInput.trim());
@@ -123,23 +122,25 @@ function TransactionForm({ onAdd, onRefresh }) {
             </div>
 
             {showAddCat ? (
-              <form onSubmit={handleAddCat} className="flex gap-2">
+              <div className="flex gap-2">
                 <input
                   autoFocus
                   value={newCatInput}
                   onChange={e => setNewCatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCat(); } }}
                   placeholder={t("catAddPlaceholder")}
                   maxLength={30}
                   className="fin-input flex-1"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleAddCat}
                   disabled={!newCatInput.trim()}
                   className="fin-btn-primary px-3 py-1.5 text-xs disabled:opacity-40"
                 >
                   {t("addBtn")}
                 </button>
-              </form>
+              </div>
             ) : (
               <div className="relative">
                 <select
