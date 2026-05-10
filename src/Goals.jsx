@@ -103,8 +103,8 @@ function GoalForm({ initial, onSave, onCancel }) {
             />
           </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
               <label className="fin-label mb-1 block">{t("goalTarget")}</label>
               <input
                 className="fin-input w-full fin-mono"
@@ -117,7 +117,7 @@ function GoalForm({ initial, onSave, onCancel }) {
                 required
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className="fin-label mb-1 block">{t("goalSaved")}</label>
               <input
                 className="fin-input w-full fin-mono"

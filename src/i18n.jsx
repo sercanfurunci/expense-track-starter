@@ -719,7 +719,7 @@ const translations = {
     goalName: "Hedef Adı",
     goalNamePlaceholder: "Tatil, laptop, acil fon…",
     goalTarget: "Hedef Tutar",
-    goalSaved: "Şimdiye kadar biriktirilen",
+    goalSaved: "Biriktirilen",
     goalTargetDate: "Hedef tarihi",
     goalOptional: "isteğe bağlı",
     goalEmpty: "Henüz hedef yok. Eklemek için + tıkla.",
