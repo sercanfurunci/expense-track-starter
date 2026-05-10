@@ -413,15 +413,15 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                     style={{ borderBottom: "1px solid var(--border)" }}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>
-                        {tx.description}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="fin-mono text-[10px]" style={{ color: "var(--text-3)" }}>
-                          {formatDate(tx.date)}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>
+                          {tx.description}
+                        </p>
                         <CategoryPill cat={tx.category} label={t(tx.category)} getCatColor={getCatColor} />
                       </div>
+                      <span className="fin-mono text-[10px] mt-0.5 block" style={{ color: "var(--text-3)" }}>
+                        {formatDate(tx.date)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span
