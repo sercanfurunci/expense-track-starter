@@ -430,7 +430,7 @@ export default function StatementImportModal({ onClose, onImported }) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "12px 0 8px" }}>
               <div style={{
                 width: 56, height: 56, borderRadius: "50%",
-                background: "rgba(16,185,129,0.12)",
+                background: "color-mix(in srgb, var(--brand) 14%, transparent)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

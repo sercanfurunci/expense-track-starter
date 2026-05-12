@@ -229,7 +229,7 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
         <div className="flex flex-col items-center mb-6">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold mb-2"
-            style={{ background: "linear-gradient(135deg, var(--brand) 0%, #9B8FF8 100%)" }}
+            style={{ background: "linear-gradient(135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 55%, #1a1a2e) 100%)" }}
           >
             {initials}
           </div>
@@ -291,7 +291,7 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
             <p className="text-xs mt-2 text-center font-medium" style={{ color: "var(--green)" }}>{linkSuccess}</p>
           )}
           {linkError && (
-            <div className="mt-2 text-xs rounded-xl px-3 py-2" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+            <div className="mt-2 text-xs rounded-xl px-3 py-2" style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}>
               {linkError}
             </div>
           )}
@@ -372,7 +372,7 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
         </div>
 
         {error && (
-          <div className="text-sm rounded-xl px-4 py-2.5 mb-4" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+          <div className="text-sm rounded-xl px-4 py-2.5 mb-4" style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}>
             {error}
           </div>
         )}
@@ -394,9 +394,9 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
               onClick={() => { setDeleteOpen(true); setDeleteError(""); }}
               className="w-full py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all"
               style={{
-                backgroundColor: "rgba(248,113,113,0.06)",
+                backgroundColor: "color-mix(in srgb, var(--red) 8%, transparent)",
                 color: "var(--red)",
-                border: "1px solid rgba(248,113,113,0.25)",
+                border: "1px solid color-mix(in srgb, var(--red) 28%, transparent)",
               }}
             >
               {t("deleteAccountBtn")}
@@ -405,8 +405,8 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
             <div
               className="rounded-xl p-4 space-y-3"
               style={{
-                backgroundColor: "rgba(248,113,113,0.04)",
-                border: "1px solid rgba(248,113,113,0.25)",
+                backgroundColor: "color-mix(in srgb, var(--red) 6%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--red) 28%, transparent)",
               }}
             >
               <p className="text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
@@ -440,7 +440,7 @@ function ProfileModal({ user, onClose, onSave, onDeleted }) {
               {deleteError && (
                 <div
                   className="text-xs rounded-lg px-3 py-2"
-                  style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}
+                  style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}
                 >
                   {deleteError}
                 </div>

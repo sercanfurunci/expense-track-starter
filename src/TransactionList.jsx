@@ -24,7 +24,7 @@ function DeleteModal({ transaction, onConfirm, onCancel }) {
       <div className="modal-panel fin-card relative rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4"
-          style={{ backgroundColor: "rgba(248,113,113,0.12)" }}
+          style={{ backgroundColor: "color-mix(in srgb, var(--red) 14%, transparent)" }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--red)" }}>
             <polyline points="3 6 5 6 21 6" />
@@ -390,7 +390,7 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                         <button
                           onClick={() => saveEdit(tx.id)}
                           className="flex-1 py-2 rounded-lg text-sm font-medium cursor-pointer transition-opacity hover:opacity-80"
-                          style={{ backgroundColor: "rgba(16,185,129,0.12)", color: "var(--green)" }}
+                          style={{ backgroundColor: "color-mix(in srgb, var(--brand) 14%, transparent)", color: "var(--green)" }}
                         >
                           {t("saveBtn")}
                         </button>
@@ -531,8 +531,8 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                             <div className="flex items-center gap-1 justify-end">
                               <button
                                 onClick={() => saveEdit(tx.id)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer"
-                                style={{ backgroundColor: "rgba(16,185,129,0.12)", color: "var(--green)" }}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
+                                style={{ backgroundColor: "color-mix(in srgb, var(--brand) 14%, transparent)", color: "var(--green)" }}
                               >
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <polyline points="20 6 9 17 4 12" />
@@ -540,7 +540,7 @@ function TransactionList({ transactions, onDelete, onEdit }) {
                               </button>
                               <button
                                 onClick={cancelEdit}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
                                 style={{ backgroundColor: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }}
                               >
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

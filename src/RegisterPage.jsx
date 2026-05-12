@@ -186,7 +186,7 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark, onShowTerms, onSho
           <div className="fin-card rounded-2xl p-8 text-center">
             <div
               className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: isSms ? "rgba(99,102,241,0.12)" : "rgba(16,185,129,0.12)" }}
+              style={{ backgroundColor: isSms ? "rgba(99,102,241,0.12)" : "color-mix(in srgb, var(--brand) 14%, transparent)" }}
             >
               {isSms ? (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand)" }}>
@@ -259,7 +259,7 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark, onShowTerms, onSho
                 />
               </div>
               {error && (
-                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}>
                   {error}
                 </div>
               )}
@@ -354,7 +354,7 @@ function RegisterPage({ onSwitch, onBack, isDark, toggleDark, onShowTerms, onSho
             </div>
 
             {error && (
-              <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+              <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}>
                 {error}
               </div>
             )}

@@ -193,7 +193,7 @@ function LoginPage({ onSuccess, onSwitch, onForgotPassword, onBack, isDark, togg
             {error && (
               <div
                 className="text-sm rounded-xl px-4 py-2.5"
-                style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}
+                style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}
               >
                 {error}
               </div>

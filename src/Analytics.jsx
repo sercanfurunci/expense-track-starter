@@ -287,7 +287,7 @@ function Analytics({ transactions }) {
               <div
                 className="px-2.5 py-1 rounded-md flex items-center gap-1 text-xs font-semibold"
                 style={{
-                  backgroundColor: totalChange > 0 ? "rgba(248,113,113,0.12)" : "rgba(16,185,129,0.12)",
+                  backgroundColor: totalChange > 0 ? "color-mix(in srgb, var(--red) 14%, transparent)" : "color-mix(in srgb, var(--brand) 14%, transparent)",
                   color: totalChange > 0 ? "var(--red)" : "var(--green)",
                 }}
               >

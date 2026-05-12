@@ -110,7 +110,7 @@ function DeleteConfirm({ budget, onConfirm, onCancel }) {
       <div className="modal-panel fin-card relative rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4"
-          style={{ backgroundColor: "rgba(248,113,113,0.12)" }}
+          style={{ backgroundColor: "color-mix(in srgb, var(--red) 14%, transparent)" }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--red)" }}>
             <polyline points="3 6 5 6 21 6" />

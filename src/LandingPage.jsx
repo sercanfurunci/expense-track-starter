@@ -21,10 +21,10 @@ function MoonIcon() {
 
 function AppPreview({ sym, t }) {
   const mockTx = [
-    { label: t("landingMonthlySalary"), income: true,  amt: `+${sym}3,500`, dot: "#10B981" },
-    { label: t("landingGrocery"),       income: false, amt: `−${sym}124`,   dot: "#F97316" },
-    { label: t("landingElectricity"),   income: false, amt: `−${sym}89`,    dot: "#EAB308" },
-    { label: "Netflix",                 income: false, amt: `−${sym}15.99`, dot: "#EC4899" },
+    { label: t("landingMonthlySalary"), income: true,  amt: `+${sym}3,500`, dot: "#37C978" },
+    { label: t("landingGrocery"),       income: false, amt: `−${sym}124`,   dot: "#F5C451" },
+    { label: t("landingElectricity"),   income: false, amt: `−${sym}89`,    dot: "#FB923C" },
+    { label: "Netflix",                 income: false, amt: `−${sym}15.99`, dot: "#E04F4F" },
   ];
   const cats = [
     { label: t("food"),          pct: 38, color: "#F5C451" },

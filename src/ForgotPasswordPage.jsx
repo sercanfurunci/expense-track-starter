@@ -50,7 +50,7 @@ function ForgotPasswordPage({ onBack }) {
 
           {sent ? (
             <div className="text-center">
-              <div className="text-sm rounded-xl px-4 py-3 mb-6" style={{ color: "var(--green)", backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              <div className="text-sm rounded-xl px-4 py-3 mb-6" style={{ color: "var(--green)", backgroundColor: "color-mix(in srgb, var(--brand) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--brand) 22%, transparent)" }}>
                 {t("resetEmailSent")}
               </div>
               <button onClick={onBack} className="text-sm font-medium cursor-pointer hover:underline" style={{ color: "var(--brand)" }}>
@@ -73,7 +73,7 @@ function ForgotPasswordPage({ onBack }) {
               </div>
 
               {error && (
-                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                <div className="text-sm rounded-xl px-4 py-2.5" style={{ color: "var(--red)", backgroundColor: "color-mix(in srgb, var(--red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--red) 22%, transparent)" }}>
                   {error}
                 </div>
               )}
