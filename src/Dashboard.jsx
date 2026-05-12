@@ -312,13 +312,13 @@ function Dashboard({ transactions, onNavigate }) {
               </button>
             )}
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {goals.slice(0, 3).map(g => {
+          <div>
+            {goals.slice(0, 3).map((g, i) => {
               const pct = Math.min(100, Math.round((parseFloat(g.saved_amount || 0) / parseFloat(g.target_amount)) * 100));
               const done = pct >= 100;
               const barColor = done ? "var(--green)" : "var(--brand)";
               return (
-                <div key={g.id} className="flex items-center gap-3 px-5 py-3.5">
+                <div key={g.id} className="flex items-center gap-3 px-5 py-3.5" style={i > 0 ? { borderTop: "1px solid var(--border)" } : {}}>
                   <span className="text-lg shrink-0">{g.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1.5">
