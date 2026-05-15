@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, ReferenceLine } from "recharts";
 import { useLang } from "./i18n.jsx";
 import { useCurrency } from "./currency.jsx";
 import { useCategories } from "./categories.jsx";
@@ -23,6 +23,20 @@ function ChartTooltip({ active, payload, t, symbol, getCatColor }) {
       <p className="font-medium capitalize" style={{ color: "var(--text-1)" }}>{t(name)}</p>
       <p className="fin-mono font-bold" style={{ color: getCatColor(name) }}>
         {symbol}{fmt(value)}
+      </p>
+    </div>
+  );
+}
+
+function DailyTooltip({ active, payload, symbol, t }) {
+  if (!active || !payload?.length) return null;
+  const { day, net } = payload[0].payload;
+  const isPos = net >= 0;
+  return (
+    <div className="fin-card rounded-xl px-3 py-2 text-sm shadow-lg">
+      <p className="text-xs mb-1" style={{ color: "var(--text-3)" }}>{t("dailyDistDay")} {day}</p>
+      <p className="fin-mono font-bold" style={{ color: isPos ? "var(--green)" : "var(--red)" }}>
+        {isPos ? "+" : "−"}{symbol}{fmt(Math.abs(net))}
       </p>
     </div>
   );
@@ -76,6 +90,16 @@ function Dashboard({ transactions, onNavigate }) {
     thisMonthExp.reduce((acc, tx) => { acc[tx.category] = (acc[tx.category] || 0) + parseFloat(tx.amount); return acc; }, {})
   ).sort((a, b) => b[1] - a[1])[0];
 
+  // ── Daily net data for current month ──
+  const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dayStr = `${thisMonthPrefix}-${String(day).padStart(2, "0")}`;
+    const dayTxs = transactions.filter(tx => (tx.date || "").slice(0, 10) === dayStr);
+    const net = dayTxs.reduce((s, tx) => s + (tx.type === "income" ? 1 : -1) * parseFloat(tx.amount), 0);
+    return { day, net };
+  });
+  const hasAnyDailyData = dailyData.some(d => d.net !== 0);
+
   const largestExpense = expenses.length > 0
     ? expenses.reduce((max, tx) => parseFloat(tx.amount) > parseFloat(max.amount) ? tx : max, expenses[0])
     : null;
@@ -101,21 +125,21 @@ function Dashboard({ transactions, onNavigate }) {
       <Summary transactions={transactions} />
 
       {/* ── Chart + Recent side by side on desktop ── */}
-      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[5fr_4fr] lg:gap-5 lg:items-start">
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[5fr_4fr] lg:gap-5 lg:items-stretch">
         {/* Category donut */}
         {catData.length > 0 ? (
-          <div className="fin-card rounded-2xl p-5">
+          <div className="fin-card rounded-2xl p-5 flex flex-col">
             <p className="fin-label mb-4">{t("expenseBreakdown")}</p>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <div style={{ width: 180, height: 180, flexShrink: 0, minWidth: 0 }}>
+            <div className="flex flex-col sm:flex-row items-center gap-6 flex-1">
+              <div style={{ width: 220, height: 220, flexShrink: 0, minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={catData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={52}
-                      outerRadius={78}
+                      innerRadius={66}
+                      outerRadius={96}
                       paddingAngle={3}
                       dataKey="value"
                       strokeWidth={0}
@@ -128,7 +152,7 @@ function Dashboard({ transactions, onNavigate }) {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex-1 w-full space-y-2.5">
+              <div className="flex-1 w-full space-y-3">
                 {catData.map(({ name, value }) => (
                   <div key={name} className="flex items-center gap-3">
                     <div
@@ -211,6 +235,36 @@ function Dashboard({ transactions, onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* ── Daily balance chart ── */}
+      {hasAnyDailyData && (
+        <div className="mt-4 fin-card rounded-2xl p-5 anim-3">
+          <p className="fin-label mb-4">{t("dailyDist")}</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={dailyData} barCategoryGap="20%" margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: 10, fill: "var(--text-3)", fontFamily: "inherit" }}
+                tickLine={false}
+                axisLine={false}
+                interval={4}
+              />
+              <YAxis hide />
+              <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="4 2" />
+              <Tooltip content={<DailyTooltip symbol={symbol} t={t} />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
+              <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={18}>
+                {dailyData.map((entry) => (
+                  <Cell
+                    key={entry.day}
+                    fill={entry.net >= 0 ? "var(--green)" : "var(--red)"}
+                    fillOpacity={entry.net === 0 ? 0 : 0.85}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* ── This month quick stats ── */}
       {thisMonthExp.length > 0 && (

@@ -165,6 +165,8 @@ const translations = {
     other: "Other",
 
     // Dashboard
+    dailyDist: "Daily Balance",
+    dailyDistDay: "Day",
     expenseBreakdown: "Expense Breakdown",
     recentActivity: "Recent Activity",
     noTransactionsDash: "No transactions yet",
@@ -549,6 +551,8 @@ const translations = {
     other: "Diğer",
 
     // Dashboard
+    dailyDist: "Günlük Dağılım",
+    dailyDistDay: "Gün",
     expenseBreakdown: "Gider Dağılımı",
     recentActivity: "Son Hareketler",
     noTransactionsDash: "Henüz işlem yok",
