@@ -244,7 +244,8 @@ function App() {
 
   const handleDelete = async (id) => {
     try {
-      await authFetch(`${API}/transactions/${id}`, { method: "DELETE" });
+      const res = await authFetch(`${API}/transactions/${id}`, { method: "DELETE" });
+      if (!res.ok) return;
       setTransactions((prev) => prev.filter((tx) => tx.id !== id));
       showToast(t("toastTxDeleted"));
     } catch (err) {
