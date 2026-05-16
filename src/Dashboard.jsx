@@ -28,16 +28,41 @@ function ChartTooltip({ active, payload, t, symbol, getCatColor }) {
   );
 }
 
-function DailyTooltip({ active, payload, symbol, t }) {
+function DailyTooltip({ active, payload, symbol, t, transactions, getCatColor, thisMonthPrefix }) {
   if (!active || !payload?.length) return null;
   const { day, net } = payload[0].payload;
+  if (net === 0) return null;
+  const dayStr = `${thisMonthPrefix}-${String(day).padStart(2, "0")}`;
+  const dayTxs = transactions
+    .filter(tx => (tx.date || "").slice(0, 10) === dayStr)
+    .sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
   const isPos = net >= 0;
   return (
-    <div className="fin-card rounded-xl px-3 py-2 text-sm shadow-lg">
-      <p className="text-xs mb-1" style={{ color: "var(--text-3)" }}>{t("dailyDistDay")} {day}</p>
-      <p className="fin-mono font-bold" style={{ color: isPos ? "var(--green)" : "var(--red)" }}>
-        {isPos ? "+" : "−"}{symbol}{fmt(Math.abs(net))}
+    <div className="fin-card rounded-xl p-3 shadow-lg" style={{ maxWidth: 240, minWidth: 180 }}>
+      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-3)" }}>
+        {t("dailyDistDay")} {day}
       </p>
+      <div className="space-y-1.5">
+        {dayTxs.map(tx => (
+          <div key={tx.id} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getCatColor(tx.category) }} />
+            <span className="text-xs flex-1 truncate" style={{ color: "var(--text-2)" }}>
+              {tx.description || t(tx.category)}
+            </span>
+            <span className="fin-mono text-xs font-semibold shrink-0" style={{ color: tx.type === "income" ? "var(--green)" : "var(--red)" }}>
+              {tx.type === "income" ? "+" : "−"}{symbol}{fmt(tx.amount)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {dayTxs.length > 1 && (
+        <div className="flex items-center justify-between mt-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+          <span className="text-xs" style={{ color: "var(--text-3)" }}>Net</span>
+          <span className="fin-mono text-xs font-bold" style={{ color: isPos ? "var(--green)" : "var(--red)" }}>
+            {isPos ? "+" : "−"}{symbol}{fmt(Math.abs(net))}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -163,7 +188,7 @@ function Dashboard({ transactions, onNavigate }) {
                       {t(name)}
                     </span>
                     <div
-                      className="h-1 rounded-full overflow-hidden"
+                      className="h-1 rounded-full overflow-hidden shrink-0"
                       style={{ width: 64, backgroundColor: "var(--surface-2)" }}
                     >
                       <div
@@ -176,7 +201,7 @@ function Dashboard({ transactions, onNavigate }) {
                     </div>
                     <span
                       className="fin-mono text-xs font-semibold shrink-0"
-                      style={{ color: "var(--text-1)", minWidth: 60, textAlign: "right" }}
+                      style={{ color: "var(--text-1)", minWidth: 88, textAlign: "right" }}
                     >
                       {symbol}{fmt(value)}
                     </span>
@@ -251,7 +276,7 @@ function Dashboard({ transactions, onNavigate }) {
               />
               <YAxis hide />
               <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="4 2" />
-              <Tooltip content={<DailyTooltip symbol={symbol} t={t} />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
+              <Tooltip content={<DailyTooltip symbol={symbol} t={t} transactions={transactions} getCatColor={getCatColor} thisMonthPrefix={thisMonthPrefix} />} cursor={{ fill: "var(--surface-2)", radius: 4 }} />
               <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={18}>
                 {dailyData.map((entry) => (
                   <Cell
