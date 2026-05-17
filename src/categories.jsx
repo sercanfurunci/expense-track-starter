@@ -41,11 +41,13 @@ export function CategoriesProvider({ initialCats = [], onSave, children }) {
     }
   }, [initialCats]);
 
+  // Returns "ok" on success, or an error code: "empty" | "reserved" | "exists"
   const addCat = useCallback((label, kind = "expense") => {
     const id = label.trim();
-    if (!id) return false;
+    if (!id) return "empty";
     const lower = id.toLowerCase();
-    if (BASE_CATS.includes(lower)) return false;
+    if (BASE_CATS.includes(lower)) return "reserved";
+    if (customCats.find(c => c.id.toLowerCase() === lower)) return "exists";
     const normalizedKind = kind === "income" ? "income" : "expense";
 
     setCustomCats(prev => {
@@ -55,8 +57,8 @@ export function CategoriesProvider({ initialCats = [], onSave, children }) {
       onSave?.(next);
       return next;
     });
-    return true;
-  }, [onSave]);
+    return "ok";
+  }, [customCats, onSave]);
 
   const removeCat = useCallback((id) => {
     setCustomCats(prev => {

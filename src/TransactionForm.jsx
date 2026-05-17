@@ -13,6 +13,7 @@ function TransactionForm({ onAdd, onRefresh }) {
   const [showRecurring, setShowRecurring] = useState(false);
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatInput, setNewCatInput] = useState("");
+  const [addCatError, setAddCatError] = useState("");
 
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -39,11 +40,14 @@ function TransactionForm({ onAdd, onRefresh }) {
   };
 
   function handleAddCat() {
-    const ok = addCat(newCatInput, type);
-    if (ok) {
+    const result = addCat(newCatInput, type);
+    if (result === "ok") {
       setCategory(newCatInput.trim());
       setNewCatInput("");
       setShowAddCat(false);
+      setAddCatError("");
+    } else {
+      setAddCatError(result); // "empty" | "reserved" | "exists"
     }
   }
 
@@ -123,7 +127,7 @@ function TransactionForm({ onAdd, onRefresh }) {
               <label className="fin-label">{t("category")}</label>
               <button
                 type="button"
-                onClick={() => { setShowAddCat(v => !v); setNewCatInput(""); }}
+                onClick={() => { setShowAddCat(v => !v); setNewCatInput(""); setAddCatError(""); }}
                 className="text-[11px] font-medium transition-opacity hover:opacity-70"
                 style={{ color: "var(--brand)" }}
               >
@@ -132,24 +136,31 @@ function TransactionForm({ onAdd, onRefresh }) {
             </div>
 
             {showAddCat ? (
-              <div className="flex gap-2">
-                <input
-                  autoFocus
-                  value={newCatInput}
-                  onChange={e => setNewCatInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCat(); } }}
-                  placeholder={t("catAddPlaceholder")}
-                  maxLength={30}
-                  className="fin-input flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCat}
-                  disabled={!newCatInput.trim()}
-                  className="fin-btn-primary px-3 py-1.5 text-xs disabled:opacity-40"
-                >
-                  {t("addBtn")}
-                </button>
+              <div className="space-y-1.5">
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={newCatInput}
+                    onChange={e => { setNewCatInput(e.target.value); if (addCatError) setAddCatError(""); }}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCat(); } }}
+                    placeholder={t("catAddPlaceholder")}
+                    maxLength={30}
+                    className="fin-input flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCat}
+                    disabled={!newCatInput.trim()}
+                    className="fin-btn-primary px-3 py-1.5 text-xs disabled:opacity-40"
+                  >
+                    {t("addBtn")}
+                  </button>
+                </div>
+                {addCatError && (
+                  <p className="text-[11px]" style={{ color: "var(--red)" }}>
+                    {t(`catAddErr_${addCatError}`)}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="relative">

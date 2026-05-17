@@ -222,6 +222,9 @@ const translations = {
     // Custom categories
     catAddNew: "New category",
     catAddPlaceholder: "Category name…",
+    catAddErr_empty: "Please enter a name.",
+    catAddErr_reserved: "That name is reserved — pick a different one.",
+    catAddErr_exists: "A category with this name already exists.",
     catManage: "Manage",
     catRemove: "Remove",
 
@@ -619,6 +622,9 @@ const translations = {
     // Custom categories
     catAddNew: "Yeni kategori",
     catAddPlaceholder: "Kategori adı…",
+    catAddErr_empty: "Lütfen bir isim gir.",
+    catAddErr_reserved: "Bu isim ayrılmış — başka bir isim seç.",
+    catAddErr_exists: "Bu isimle zaten bir kategori var.",
     catManage: "Yönet",
     catRemove: "Kaldır",
 
