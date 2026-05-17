@@ -292,6 +292,7 @@ const translations = {
     recurringResume: "Resume",
     recurringDeleteConfirm: "Delete this recurring rule? Already-created transactions will be kept.",
     recurringDuplicateWarn: ({ name }) => `"${name}" already exists in Subscriptions. Adding it here will double-count it every period. Continue anyway?`,
+    recurringAddAnyway: "Add anyway",
     subsTrackingOnly: "Subscriptions are tracking-only by default. Turn on \"Auto-charge\" when creating one to have each billing date logged automatically.",
 
     // Profile modal
@@ -687,6 +688,7 @@ const translations = {
     recurringResume: "Devam ettir",
     recurringDeleteConfirm: "Bu tekrarlayan kural silinsin mi? Daha önce eklenmiş işlemler kalacaktır.",
     recurringDuplicateWarn: ({ name }) => `"${name}" zaten Üyelikler'de var. Burada da eklersen her dönem iki kez sayılır. Yine de devam edelim mi?`,
+    recurringAddAnyway: "Yine de ekle",
     subsTrackingOnly: "Üyelikler varsayılan olarak sadece takip içindir. Oluştururken \"Otomatik gider\" seçeneğini açarsan her fatura tarihinde otomatik kayıt düşülür.",
 
     // Profile modal

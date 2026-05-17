@@ -28,7 +28,7 @@ function fmtAmount(n, symbol) {
 }
 
 // ─── Styled confirm dialog ───────────────────────────────────────────────────
-function ConfirmModal({ message, onConfirm, onCancel }) {
+function ConfirmModal({ message, confirmLabel, cancelLabel, onConfirm, onCancel }) {
   return createPortal(
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
@@ -57,7 +57,7 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border)")}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
@@ -66,7 +66,7 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
             onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
             onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
           >
-            OK
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -249,21 +249,17 @@ function RecurringForm({ initial, onCancel, onSubmit, saving, t }) {
         </div>
       )}
 
-      {/* Dates */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <div>
-          <label className="fin-label block mb-1.5">{t("recurringStartDate")}</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="fin-input fin-mono" required />
-        </div>
-        <div>
-          <label className="fin-label block mb-1.5">{t("recurringEndDate")}</label>
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="fin-input fin-mono" />
-        </div>
+      {/* Dates — labels in row 1, inputs in row 2 so inputs stay aligned even if labels wrap differently */}
+      <div className="grid grid-cols-2 grid-rows-[auto_auto] gap-x-2.5 gap-y-1.5 items-end">
+        <label className="fin-label self-end">{t("recurringStartDate")}</label>
+        <label className="fin-label self-end">{t("recurringEndDate")}</label>
+        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="fin-input fin-mono w-full" required />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="fin-input fin-mono w-full" />
       </div>
 
       <div className="flex gap-2 mt-2">
         <button type="button" onClick={onCancel} className="fin-icon-btn flex-1" style={{ width: "auto", paddingLeft: 14, paddingRight: 14, fontSize: 13, fontWeight: 500 }}>
-          {t("cancel") || "Cancel"}
+          {t("cancelBtn")}
         </button>
         <button type="submit" className="fin-btn-primary flex-1" disabled={saving}>
           {saving ? (t("savingBtn") || "Saving…") : (t("saveBtn") || "Save")}
@@ -473,6 +469,8 @@ function Recurring({ onClose, onChanged }) {
       {deleteTarget && (
         <ConfirmModal
           message={t("recurringDeleteConfirm")}
+          confirmLabel={t("deleteBtn")}
+          cancelLabel={t("cancelBtn")}
           onConfirm={() => { handleDelete(deleteTarget); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
         />
@@ -480,6 +478,8 @@ function Recurring({ onClose, onChanged }) {
       {dupPayload && (
         <ConfirmModal
           message={t("recurringDuplicateWarn")({ name: dupPayload.name })}
+          confirmLabel={t("recurringAddAnyway")}
+          cancelLabel={t("cancelBtn")}
           onConfirm={() => { const p = dupPayload.payload; setDupPayload(null); doSubmit(p); }}
           onCancel={() => setDupPayload(null)}
         />
