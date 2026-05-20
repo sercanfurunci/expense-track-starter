@@ -207,9 +207,16 @@ function monthlyEquivalent(amount, cycle) {
   return amount;
 }
 
-function monthsActive(startedAt) {
+
+function periodsActive(startedAt, cycle) {
   const start = parseLocalDate(startedAt) || new Date(startedAt);
   const now = new Date();
+  const diffMs = now - start;
+  if (cycle === "weekly") return Math.max(1, Math.floor(diffMs / (7 * 86400000)));
+  if (cycle === "yearly") {
+    const y = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    return Math.max(1, Math.floor(y / 12));
+  }
   const m = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
   return Math.max(1, m);
 }
@@ -272,8 +279,13 @@ function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency,
   const subCurrency = CURRENCIES.find(c => c.code === sub.currency) || CURRENCIES[0];
   const userCurrencyObj = CURRENCIES.find(c => c.code === userCurrency) || subCurrency;
   const days = daysUntil(sub.next_billing_date, sub.billing_cycle);
-  const months = monthsActive(sub.started_at);
-  const totalSpent = parseFloat(sub.amount) * months;
+  const periods = periodsActive(sub.started_at, sub.billing_cycle);
+  const totalSpent = parseFloat(sub.amount) * periods;
+  const periodsLabel = sub.billing_cycle === "weekly"
+    ? t("subWeeksActive")
+    : sub.billing_cycle === "yearly"
+    ? t("subYearsActive")
+    : t("subMonthsActive");
   const dateLocale = lang === "tr" ? "tr-TR" : "en-US";
   const [rate, setRate] = useState(preloadedRate);
   const [addingExpense, setAddingExpense] = useState(false);
@@ -305,7 +317,7 @@ function SubDetail({ sub, onEdit, onDelete, onClose, onAddExpense, userCurrency,
     `${days} ${t("subDays")}`;
 
   const stats = [
-    [t("subMonthsActive"), String(months)],
+    [periodsLabel, String(periods)],
     [t("subTotalSpent"), `${subCurrency.symbol}${totalSpent.toLocaleString(dateLocale, { maximumFractionDigits: 2 })}`],
     [t("subStartedAt"), startDate],
     [t("subNextBilling"), daysLabel],
